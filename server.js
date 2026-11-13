@@ -86,10 +86,8 @@ app.get('/nuevo', auth.requireLogin, (req, res) => {
   const year = todayParts().y;
   const used = db.prepare('SELECT COUNT(*) c FROM memories WHERE user_id = ? AND year = ?')
     .get(req.user.id, year).c;
-  if (used >= 2) {
-    return res.send(views.closedPage(req.user));
-  }
-  res.send(views.memoryForm({ user: req.user, slotsFree: 2 - used, year }));
+  if (used >= 1) return res.send(views.alreadyWrittenPage(req.user, year));
+  res.send(views.memoryForm({ user: req.user, year }));
 });
 
 app.post('/nuevo', auth.requireLogin, upload.single('photo'), (req, res) => {
@@ -97,12 +95,12 @@ app.post('/nuevo', auth.requireLogin, upload.single('photo'), (req, res) => {
   const year = todayParts().y;
   const used = db.prepare('SELECT COUNT(*) c FROM memories WHERE user_id = ? AND year = ?')
     .get(req.user.id, year).c;
-  if (used >= 2) return res.send(views.closedPage(req.user));
+  if (used >= 1) return res.send(views.alreadyWrittenPage(req.user, year));
 
   const body = String(req.body.body || '').trim();
   if (!body) {
     return res.status(400).send(views.memoryForm({
-      user: req.user, slotsFree: 2 - used, year, error: 'El recuerdo no puede ir vacío.'
+      user: req.user, year, error: 'El recuerdo no puede ir vacío.'
     }));
   }
   db.prepare(`INSERT INTO memories (user_id, year, slot, body, song, song_url, photo, is_placeholder)

@@ -9,12 +9,14 @@ anuales, más el correo automático de cada 24 de noviembre.
 ## Cómo funciona
 
 - **Sitio** (login privado): hero con contador en vivo y el cofre de recuerdos por año.
-- **Recuerdos**: 2 por persona por año. Se crean solo entre el **24 nov y el 31 dic**
+- **Recuerdos**: 1 por persona por año. Se crean solo entre el **24 nov y el 31 dic**
   (el correo trae el botón). Cada recuerdo admite **una corrección**, sin límite de
   tiempo. Los precargados de 2023–2025 se llenan editándolos (llenarlos no gasta la
   corrección).
-- **Correo del 24 nov, 8:00 am (Vancouver)**: estadísticas dinámicas + un recuerdo
-  de cada quien, de un año pasado al azar, **sin repetir** hasta agotar el pool.
+- **Correo del 24 nov, 8:00 am (Vancouver)**: asunto `¡Feliz Nº Aniversario! 🥂`,
+  preview text que rota entre 10 frases (lib/emailTemplate.js), estadísticas dinámicas
+  y un recuerdo de cada quien, de un año pasado al azar, **sin repetir** hasta agotar el pool.
+- **Recordatorio del 1 dic**: solo a quien todavía no escribe su recuerdo del año.
 - **Correo de prueba cada 10 nov**, solo a Felipe: confirma que el sistema vive.
 - **Respaldos**: copia local semanal de la base (rota 12) y copia mensual + la del
   24 nov enviada por correo. Las **fotos** solo se respaldan en el servidor:

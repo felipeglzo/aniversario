@@ -2,6 +2,7 @@
 // Corre una vez al día (systemd timer, 8:00 America/Vancouver).
 // - 10 nov: correo de PRUEBA solo a Felipe (verifica que todo vive).
 // - 24 nov: correo de ANIVERSARIO a ambos (elige y marca recuerdos).
+// - 1 dic:  RECORDATORIO solo a quien no ha escrito su recuerdo del año.
 // - lunes:  respaldo de la base de datos al correo de Felipe.
 // Idempotente: email_log evita envíos dobles aunque corra dos veces.
 const config = require('../lib/config');
@@ -40,6 +41,25 @@ async function main() {
     await sendEmail({ to, subject: asunto, html: htmlBody });
     log('anniversary', year, picked ? `año citado: ${picked.year}` : 'sin recuerdos aún');
     console.log('Correo de aniversario enviado a', to.join(', '));
+  }
+
+  // 1 de diciembre: recordatorio individual a quien no ha escrito su recuerdo del año.
+  const t = todayParts();
+  if (t.m === 12 && t.d === 1) {
+    const { buildReminder } = require('../lib/emailTemplate');
+    const people = [
+      { id: 1, username: 'felipe', name: 'Felipe', to: config.MAIL_TO_FELIPE },
+      { id: 2, username: 'fernanda', name: 'Fernanda', to: config.MAIL_TO_FERNANDA }
+    ];
+    for (const p of people) {
+      const kind = `reminder-${p.username}`;
+      const wrote = db.prepare('SELECT 1 FROM memories WHERE user_id = ? AND year = ?').get(p.id, year);
+      if (wrote || !p.to || already(kind, year)) continue;
+      const { asunto, htmlBody } = buildReminder({ name: p.name, year });
+      await sendEmail({ to: [p.to], subject: asunto, html: htmlBody });
+      log(kind, year, 'ok');
+      console.log('Recordatorio enviado a', p.name);
+    }
   }
 
   // Respaldo semanal (lunes) + siempre el día del aniversario.
