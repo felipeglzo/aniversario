@@ -91,8 +91,9 @@ app.get('/', auth.requireLogin, (req, res) => {
       'prueba-ok': { type: 'info', text: 'Correo de prueba en camino a tu bandeja.' },
       'prueba-espera': { type: 'info', text: 'Espera un minuto antes de mandar otra prueba.' },
       'prueba-error': { type: 'error', text: 'No se pudo enviar la prueba. Revisa la configuración de Resend.' },
-      'ajustes-ok': { type: 'info', text: 'Perfil actualizado. Te ves increíble, por cierto.' }
-    })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : req.query.ajustes ? 'ajustes-ok' : ''] || null
+      'ajustes-ok': { type: 'info', text: 'Perfil actualizado. Te ves increíble, por cierto.' },
+      ya: { type: 'info', text: `Ya escribiste tu recuerdo del ${todayParts().y}. Puedes corregirlo una vez desde el cofre.` }
+    })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : req.query.ajustes ? 'ajustes-ok' : req.query.ya ? 'ya' : ''] || null
   }));
 });
 
@@ -102,7 +103,7 @@ app.get('/nuevo', auth.requireLogin, (req, res) => {
   const year = todayParts().y;
   const used = db.prepare('SELECT COUNT(*) c FROM memories WHERE user_id = ? AND year = ?')
     .get(req.user.id, year).c;
-  if (used >= 1) return res.send(views.alreadyWrittenPage(req.user, year));
+  if (used >= 1) return res.redirect('/?ya=1');
   res.send(views.memoryForm({ user: req.user, year }));
 });
 
@@ -111,7 +112,7 @@ app.post('/nuevo', auth.requireLogin, upload.single('photo'), (req, res) => {
   const year = todayParts().y;
   const used = db.prepare('SELECT COUNT(*) c FROM memories WHERE user_id = ? AND year = ?')
     .get(req.user.id, year).c;
-  if (used >= 1) return res.send(views.alreadyWrittenPage(req.user, year));
+  if (used >= 1) return res.redirect('/?ya=1');
 
   const body = String(req.body.body || '').trim();
   if (!body) {

@@ -118,7 +118,7 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
 .bubble header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bubble header b { color: #F02D3A; }
 .tag { font-size: 11px; background: #273043; color: #fff; border-radius: 999px; padding: 2px 8px; }
-.tag-pending { background: #9197AE; }
+.tag-pending { background: #F02D3A; color: #fff; }
 .bubble .body { margin: 6px 0; font-style: italic; line-height: 1.45; white-space: pre-wrap; }
 .song { font-size: 13px; font-weight: bold; margin: 6px 0; }
 .song a { color: #273043; }
