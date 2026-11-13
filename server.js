@@ -71,7 +71,12 @@ app.get('/', auth.requireLogin, (req, res) => {
   res.send(views.homePage({
     user: req.user,
     byYear: allMemoriesByYear(),
-    flash: req.query.ok === '1' ? '💾 Recuerdo guardado. ¡Gracias por escribirle al futuro!' : null
+    flash: ({
+      ok: '💾 Recuerdo guardado. ¡Gracias por escribirle al futuro!',
+      'prueba-ok': `📧 Correo de prueba enviado a ${config.MAIL_TO_FELIPE}.`,
+      'prueba-espera': '⏳ Espera un minuto antes de mandar otra prueba.',
+      'prueba-error': '⚠️ No se pudo enviar la prueba. Revisa la configuración de Resend.'
+    })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : ''] || null
   }));
 });
 
@@ -141,6 +146,29 @@ app.post('/editar/:id', auth.requireLogin, upload.single('photo'), (req, res) =>
       wasPlaceholder ? 0 : 1, // llenar el placeholder no gasta la corrección
       mem.id);
   res.redirect('/?ok=1');
+});
+
+// Correo de prueba bajo demanda: solo Felipe, solo a su correo, no gasta recuerdos.
+let lastTestMail = 0;
+app.post('/prueba-correo', auth.requireLogin, async (req, res, next) => {
+  if (req.user.username !== 'felipe') return res.status(403).redirect('/');
+  if (Date.now() - lastTestMail < 60000) return res.redirect('/?prueba=espera');
+  try {
+    const { buildEmail } = require('./lib/emailTemplate');
+    const { sendEmail } = require('./lib/mailer');
+    const { asunto, htmlBody } = buildEmail({}); // commit: false → no marca recuerdos
+    await sendEmail({
+      to: [config.MAIL_TO_FELIPE],
+      subject: `[PRUEBA] ${asunto}`,
+      html: `<p style="font-family:Arial;background:#fff3cd;padding:10px;border-radius:8px;">
+        🧪 Correo de prueba enviado desde el sitio. El recuerdo mostrado NO queda gastado.</p>` + htmlBody
+    });
+    lastTestMail = Date.now();
+    res.redirect('/?prueba=ok');
+  } catch (err) {
+    console.error('Prueba de correo falló:', err.message);
+    res.redirect('/?prueba=error');
+  }
 });
 
 // Salud (para monitoreo simple).
