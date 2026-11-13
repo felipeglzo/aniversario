@@ -3,7 +3,7 @@
 // - 10 nov: correo de PRUEBA solo a Felipe (verifica que todo vive).
 // - 24 nov: correo de ANIVERSARIO a ambos (elige y marca recuerdos).
 // - 1 dic:  RECORDATORIO solo a quien no ha escrito su recuerdo del año.
-// - lunes:  respaldo de la base de datos al correo de Felipe.
+// - lunes:  respaldo local; por correo a Felipe cada trimestre y el 24 nov.
 // Idempotente: email_log evita envíos dobles aunque corra dos veces.
 const config = require('../lib/config');
 const db = require('../lib/db');
@@ -65,7 +65,9 @@ async function main() {
   // Respaldo semanal (lunes) + siempre el día del aniversario.
   const dow = new Date().toLocaleDateString('en-US', { timeZone: config.TZ_LOCAL, weekday: 'short' });
   if (dow === 'Mon' || isAnniversaryToday()) {
-    await runBackup({ email: isAnniversaryToday() || new Date().getDate() <= 7 });
+    // Correo: primer lunes de enero, abril, julio y octubre, más el 24 de noviembre.
+    const firstMondayOfQuarter = dow === 'Mon' && [1, 4, 7, 10].includes(t.m) && t.d <= 7;
+    await runBackup({ email: isAnniversaryToday() || firstMondayOfQuarter });
   }
 }
 

@@ -40,3 +40,13 @@
     if (f) img.src = URL.createObjectURL(f);
   });
 })();
+
+// Avisos: se cierran con la ✕ o solos (los de info a los 6 s); limpia la URL.
+(function () {
+  const f = document.getElementById('flash');
+  if (!f) return;
+  if (location.search) history.replaceState(null, '', location.pathname);
+  const close = () => { f.classList.add('hide'); setTimeout(() => f.remove(), 300); };
+  f.querySelector('.flash-close').addEventListener('click', close);
+  if (f.classList.contains('flash-info')) setTimeout(close, 6000);
+})();

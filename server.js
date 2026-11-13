@@ -87,11 +87,11 @@ app.get('/', auth.requireLogin, (req, res) => {
     user: req.user,
     byYear: allMemoriesByYear(),
     flash: ({
-      ok: '💾 Recuerdo guardado. ¡Gracias por escribirle al futuro!',
-      'prueba-ok': `📧 Correo de prueba enviado a ${config.MAIL_TO_FELIPE}.`,
-      'prueba-espera': '⏳ Espera un minuto antes de mandar otra prueba.',
-      'prueba-error': '⚠️ No se pudo enviar la prueba. Revisa la configuración de Resend.',
-      'ajustes-ok': '✅ Ajustes guardados.'
+      ok: { type: 'info', text: 'Guardado en el cofre. Tu yo del futuro te lo agradece.' },
+      'prueba-ok': { type: 'info', text: 'Correo de prueba en camino a tu bandeja.' },
+      'prueba-espera': { type: 'info', text: 'Espera un minuto antes de mandar otra prueba.' },
+      'prueba-error': { type: 'error', text: 'No se pudo enviar la prueba. Revisa la configuración de Resend.' },
+      'ajustes-ok': { type: 'info', text: 'Perfil actualizado. Te ves increíble, por cierto.' }
     })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : req.query.ajustes ? 'ajustes-ok' : ''] || null
   }));
 });
