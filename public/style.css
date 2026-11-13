@@ -8,10 +8,10 @@ body {
 }
 nav {
   display: flex; justify-content: space-between; align-items: center;
-  background: #273043; color: #fff; padding: 10px 16px;
+  background: #273043; color: #fff; padding: 0 16px; height: 64px; box-sizing: border-box;
   position: sticky; top: 0; z-index: 10;
 }
-@media (min-width: 768px) { nav { padding: 12px 32px; } }
+@media (min-width: 768px) { nav { padding: 0 32px; } }
 nav .brand { color: #fff; text-decoration: none; display: flex; align-items: center; }
 .logo { display: block; height: 22px; width: auto; }
 .nav-right { display: flex; align-items: center; gap: 12px; }
@@ -57,7 +57,7 @@ nav .brand { color: #fff; text-decoration: none; display: flex; align-items: cen
 .inline { display: inline; margin: 0; }
 
 main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
-body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20px; }
+.site-footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20px; }
 
 .card {
   background: #fff; border-radius: 12px; padding: 24px;
@@ -65,7 +65,18 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
 }
 
 /* Hero: fondo a todo lo ancho, contenido centrado */
-.hero { background: #EFF6EE; border-bottom: 1px solid #E2EADD; }
+/* El hero se queda fijo bajo la barra y la "hoja" del cofre sube cubriéndolo. */
+.hero { background: #EFF6EE; position: sticky; top: 64px; z-index: 0; }
+.sheet { position: relative; z-index: 1; background: #f4f4f4; }
+.sheet-over-hero {
+  border-radius: 24px 24px 0 0; margin-top: -24px;
+  box-shadow: 0 -6px 24px rgba(39, 48, 67, .08);
+}
+/* Pantallas muy bajitas (p. ej. celular acostado): sin efecto, para no tapar las estadísticas */
+@media (max-height: 640px) {
+  .hero { position: static; }
+  .sheet-over-hero { margin-top: 0; border-radius: 0; box-shadow: none; }
+}
 .hero-inner {
   max-width: 960px; margin: 0 auto; padding: 36px 16px 32px;
   display: grid; gap: 24px; text-align: center; align-items: center;
@@ -94,10 +105,11 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
 /* CTA */
 .cta-strip { background: #F02D3A; color: #fff; text-align: center; }
 .cta-strip p { margin: 0 0 14px; font-weight: bold; }
-.muted-strip { background: #9197AE; }
-.muted-strip p { margin: 0; }
+.btn-dark { background: #273043; }
+.btn-dark:hover { background: #1b2230; }
+.section-sub { text-align: center; color: #9197AE; font-size: 14px; margin: 0 0 8px; }
 
-.section-title { text-align: center; color: #273043; margin: 30px 0 10px; }
+.section-title { text-align: center; color: #273043; margin: 30px 0 6px; }
 
 /* Años y recuerdos */
 .year-block h2 { text-align: center; margin: 26px 0 14px; }
