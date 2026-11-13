@@ -15,7 +15,8 @@ anuales, más el correo automático de cada 24 de noviembre.
   corrección).
 - **Correo del 24 nov, 8:00 am (Vancouver)**: asunto `¡Feliz Nº Aniversario! 🥂`,
   preview text que rota entre 10 frases (lib/emailTemplate.js), estadísticas dinámicas
-  y un recuerdo de cada quien, de un año pasado al azar, **sin repetir** hasta agotar el pool.
+  y un recuerdo de cada quien, de un año pasado al azar (nunca el inmediato anterior),
+  **sin repetir** hasta agotar el pool.
 - **Recordatorio del 1 dic**: solo a quien todavía no escribe su recuerdo del año.
 - **Correo de prueba cada 10 nov**, solo a Felipe: confirma que el sistema vive.
 - **Respaldos**: copia local semanal de la base (rota 12) y copia trimestral (primer lunes de ene/abr/jul/oct) + la del
