@@ -106,15 +106,36 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
   padding: 6px 22px; border-radius: 10px; display: inline-block;
 }
 .memories { display: flex; flex-direction: column; gap: 14px; }
-.memory { display: flex; gap: 10px; align-items: flex-end; }
+.memory { display: flex; gap: 20px; align-items: flex-end; }
 .memory.right { flex-direction: row-reverse; }
 .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 3px solid #F02D3A; flex: none; background: #fff; }
 .bubble {
-  background: #E2EADD; border-radius: 18px 18px 18px 4px; padding: 14px 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.15); max-width: 85%;
+  position: relative;
+  background: #E2EADD; border-radius: 18px; padding: 14px 16px;
+  /* drop-shadow (en vez de box-shadow) para que la sombra siga también la colita */
+  filter: drop-shadow(0 1px 1.5px rgba(39,48,67,.18)); max-width: 85%;
 }
-.memory.right .bubble { background: #EFF6EE; border-radius: 18px 18px 4px 18px; }
+.memory.left .bubble { border-bottom-left-radius: 4px; }
+.memory.right .bubble { background: #EFF6EE; border-bottom-right-radius: 4px; }
+
+/* Colita de la burbuja (estilo mensaje), curva y apuntando al avatar. */
+.bubble::before {
+  content: ""; position: absolute; bottom: 0; width: 18px; height: 22px;
+  background: inherit;
+}
+.memory.left .bubble::before {
+  left: -17px;
+  clip-path: path("M18,0 C18,11 12,19 0,22 L18,22 Z");
+}
+.memory.right .bubble::before {
+  right: -17px;
+  clip-path: path("M0,0 C0,11 6,19 18,22 L0,22 Z");
+}
+
+/* Pendientes: borrador punteado, sin colita (aún no se "envían") */
 .memory.pending .bubble { opacity: .75; border: 2px dashed #9197AE; }
+.memory.pending .bubble::before { display: none; }
+.memory.pending .bubble { border-radius: 18px; }
 .bubble header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bubble header b { color: #F02D3A; }
 .tag { font-size: 11px; background: #273043; color: #fff; border-radius: 999px; padding: 2px 8px; }
