@@ -84,6 +84,7 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
     grid-template-columns: 1fr 1fr; gap: 48px; text-align: left;
     padding: 56px 32px;
   }
+  .hero-main { text-align: center; }
   .hero-years { font-size: 120px; }
   .hero-stats div { padding: 22px 18px; }
   .hero-stats b { font-size: 32px; }
