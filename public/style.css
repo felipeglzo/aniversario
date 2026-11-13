@@ -109,8 +109,19 @@ footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20px; }
 .song { font-size: 13px; font-weight: bold; margin: 6px 0; }
 .song a { color: #273043; }
 .photo { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; }
-.bubble footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px; color: #666; }
-.edit-link { color: #F02D3A; font-weight: bold; text-decoration: none; }
+.bubble footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; color: #666; }
+/* Botón Editar: abajo, del lado opuesto al avatar */
+.memory.left .bubble footer { flex-direction: row; }
+.memory.right .bubble footer { flex-direction: row-reverse; }
+.memory.left .edit-btn { margin-left: auto; }
+.memory.right .edit-btn { margin-right: auto; }
+.edit-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #F02D3A; border: 1.5px solid #F02D3A; border-radius: 999px;
+  padding: 5px 12px; font-size: 13px; font-weight: bold; text-decoration: none; background: transparent;
+}
+.edit-btn:hover { background: #F02D3A; color: #fff; }
+.edit-btn svg { display: block; }
 time { color: #9197AE; }
 
 /* Formularios */
