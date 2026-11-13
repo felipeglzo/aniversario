@@ -47,7 +47,7 @@ journalctl -u aniversario-daily -n 50     # logs de la tarea diaria
 
 ```
 RESEND_API_KEY=re_xxx
-MAIL_FROM=Felipe y Fernanda del pasado <recuerdos@felipeorigel.com>
+MAIL_FROM=F + F <recuerdos@felipeorigel.com>
 MAIL_TO_FELIPE=glzo.felipe@gmail.com
 MAIL_TO_FERNANDA=...
 SITE_URL=https://aniversario.felipeorigel.com

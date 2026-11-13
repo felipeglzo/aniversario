@@ -16,6 +16,21 @@ app.set('trust proxy', 1); // detrás de Caddy
 
 app.use(express.urlencoded({ extended: false }));
 app.use(auth.sessionMiddleware);
+
+// Avatares: públicos (los usa el correo). Si el usuario subió uno, se sirve ese;
+// si no, el original de public/avatars/.
+app.get('/avatars/:file', (req, res, next) => {
+  const m = /^(felipe|fernanda)\.png$/.exec(req.params.file);
+  if (!m) return next();
+  const u = db.prepare('SELECT avatar FROM users WHERE username = ?').get(m[1]);
+  if (u && u.avatar) {
+    const custom = path.join(config.AVATARS_DIR, u.avatar);
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(custom, err => err && next());
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
 // Fotos: solo con sesión iniciada.
@@ -75,8 +90,9 @@ app.get('/', auth.requireLogin, (req, res) => {
       ok: '💾 Recuerdo guardado. ¡Gracias por escribirle al futuro!',
       'prueba-ok': `📧 Correo de prueba enviado a ${config.MAIL_TO_FELIPE}.`,
       'prueba-espera': '⏳ Espera un minuto antes de mandar otra prueba.',
-      'prueba-error': '⚠️ No se pudo enviar la prueba. Revisa la configuración de Resend.'
-    })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : ''] || null
+      'prueba-error': '⚠️ No se pudo enviar la prueba. Revisa la configuración de Resend.',
+      'ajustes-ok': '✅ Ajustes guardados.'
+    })[req.query.ok === '1' ? 'ok' : req.query.prueba ? `prueba-${req.query.prueba}` : req.query.ajustes ? 'ajustes-ok' : ''] || null
   }));
 });
 
@@ -144,6 +160,39 @@ app.post('/editar/:id', auth.requireLogin, upload.single('photo'), (req, res) =>
       wasPlaceholder ? 0 : 1, // llenar el placeholder no gasta la corrección
       mem.id);
   res.redirect('/?ok=1');
+});
+
+// Ajustes: nombre y avatar (recortado a círculo 256×256 con sharp).
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /^image\//.test(file.mimetype))
+});
+
+app.get('/ajustes', auth.requireLogin, (req, res) => {
+  res.send(views.settingsPage({ user: req.user }));
+});
+
+app.post('/ajustes', auth.requireLogin, avatarUpload.single('avatar'), async (req, res) => {
+  const name = String(req.body.display_name || '').trim().slice(0, 30);
+  if (!name) return res.status(400).send(views.settingsPage({ user: req.user, error: 'El nombre no puede ir vacío.' }));
+
+  let avatarFile = req.user.avatar;
+  if (req.file) {
+    try {
+      const sharp = require('sharp');
+      avatarFile = `${req.user.username}-${Date.now()}.png`;
+      await sharp(req.file.buffer).rotate().resize(256, 256, { fit: 'cover' }).png()
+        .toFile(path.join(config.AVATARS_DIR, avatarFile));
+      // Borra el avatar anterior personalizado.
+      if (req.user.avatar) require('fs').unlink(path.join(config.AVATARS_DIR, req.user.avatar), () => {});
+    } catch (err) {
+      console.error('Avatar falló:', err.message);
+      return res.status(400).send(views.settingsPage({ user: req.user, error: 'No se pudo procesar esa imagen. Prueba con JPG o PNG.' }));
+    }
+  }
+  db.prepare('UPDATE users SET display_name = ?, avatar = ? WHERE id = ?').run(name, avatarFile, req.user.id);
+  res.redirect('/?ajustes=ok');
 });
 
 // Correo de prueba bajo demanda: solo Felipe, solo a su correo, no gasta recuerdos.
