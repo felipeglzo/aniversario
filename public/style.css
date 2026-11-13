@@ -67,7 +67,7 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
 /* Hero: fondo a todo lo ancho, contenido centrado */
 /* El hero se queda fijo bajo la barra y la "hoja" del cofre sube cubriéndolo. */
 .hero { background: #EFF6EE; position: sticky; top: 64px; z-index: 0; }
-.sheet { position: relative; z-index: 1; background: #f4f4f4; }
+.sheet { position: relative; z-index: 1; background: #f4f4f4; overflow-x: clip; }
 .sheet-over-hero {
   border-radius: 24px 24px 0 0; margin-top: -24px;
   box-shadow: 0 -6px 24px rgba(39, 48, 67, .08);
@@ -112,10 +112,17 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
 .section-title { text-align: center; color: #273043; margin: 30px 0 6px; }
 
 /* Años y recuerdos */
-.year-block h2 { text-align: center; margin: 26px 0 14px; }
+.year-block h2 { text-align: center; margin: 26px 0 14px; position: relative; }
+/* Línea de 1px detrás del año, de extremo a extremo de la pantalla */
+.year-block h2::before {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 100vw; height: 1px; transform: translateX(-50%);
+  background: rgba(243, 85, 96, .5);
+}
 .year-badge {
   background: #F35560; color: #fff; font-weight: 900; font-size: 26px;
   padding: 6px 22px; border-radius: 10px; display: inline-block;
+  position: relative; /* por encima de la línea */
 }
 .memories { display: flex; flex-direction: column; gap: 14px; }
 .memory { display: flex; gap: 20px; align-items: flex-end; }
