@@ -78,7 +78,7 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
   .sheet-over-hero { margin-top: 0; border-radius: 0; box-shadow: none; }
 }
 .hero-inner {
-  max-width: 960px; margin: 0 auto; padding: 36px 16px 32px;
+  max-width: 960px; margin: 0 auto; padding: 36px 16px 64px;
   display: grid; gap: 24px; text-align: center; align-items: center;
 }
 .hero-label { margin: 0; font-size: 14px; letter-spacing: 3px; color: #9197AE; font-weight: bold; }
@@ -93,7 +93,7 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
 @media (min-width: 760px) {
   .hero-inner {
     grid-template-columns: 1fr 1fr; gap: 48px; text-align: left;
-    padding: 76px 32px 108px;
+    padding: 76px 32px 140px;
   }
   .hero-main { text-align: center; }
   .hero-years { font-size: 120px; }
