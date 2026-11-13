@@ -17,8 +17,8 @@ nav .brand { color: #fff; text-decoration: none; display: flex; align-items: cen
 .nav-right { display: flex; align-items: center; gap: 12px; }
 
 .icon-btn {
-  background: transparent; border: none; cursor: pointer; font-size: 22px; line-height: 1;
-  padding: 6px; border-radius: 10px;
+  background: transparent; border: none; cursor: pointer; line-height: 0;
+  padding: 7px; border-radius: 10px; color: #fff; display: inline-flex;
 }
 .icon-btn:hover { background: rgba(255,255,255,.1); }
 
