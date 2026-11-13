@@ -11,6 +11,7 @@ nav {
   background: #273043; color: #fff; padding: 10px 16px;
   position: sticky; top: 0; z-index: 10;
 }
+@media (min-width: 768px) { nav { padding: 12px 32px; } }
 nav .brand { color: #fff; text-decoration: none; display: flex; align-items: center; }
 .logo { display: block; height: 22px; width: auto; }
 .nav-right { display: flex; align-items: center; gap: 12px; }
@@ -63,16 +64,31 @@ body > footer { text-align: center; color: #9197AE; font-size: 12px; padding: 20
   box-shadow: 0 4px 15px rgba(0,0,0,.08); margin-bottom: 20px;
 }
 
-/* Hero */
-.hero { background: #EFF6EE; text-align: center; padding: 36px 20px 28px; }
+/* Hero: fondo a todo lo ancho, contenido centrado */
+.hero { background: #EFF6EE; border-bottom: 1px solid #E2EADD; }
+.hero-inner {
+  max-width: 960px; margin: 0 auto; padding: 36px 16px 32px;
+  display: grid; gap: 24px; text-align: center; align-items: center;
+}
 .hero-label { margin: 0; font-size: 14px; letter-spacing: 3px; color: #9197AE; font-weight: bold; }
-.hero-years { font-size: 96px; font-weight: 1000; line-height: 1; color: #F02D3A; }
-.hero-sub { margin: 6px 0 14px; font-size: 20px; font-weight: bold; color: #F02D3A; }
+.hero-years { font-size: 96px; font-weight: 1000; line-height: 1; color: #F02D3A; margin-top: 4px; }
+.hero-sub { margin: 6px 0 16px; font-size: 20px; font-weight: bold; color: #F02D3A; }
 .live-counter { font-size: 15px; color: #273043; background: #E2EADD; border-radius: 10px; padding: 10px 14px; display: inline-block; min-height: 1em; font-variant-numeric: tabular-nums; }
-.hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 20px; }
-.hero-stats div { background: #fff; border-radius: 10px; padding: 12px 6px; }
-.hero-stats b { display: block; font-size: 22px; color: #F02D3A; }
+.hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hero-stats div { background: #fff; border-radius: 12px; padding: 16px 8px; box-shadow: 0 1px 3px rgba(39,48,67,.06); }
+.hero-stats b { display: block; font-size: 24px; color: #F02D3A; font-variant-numeric: tabular-nums; }
 .hero-stats span { font-size: 12px; color: #9197AE; }
+
+@media (min-width: 760px) {
+  .hero-inner {
+    grid-template-columns: 1fr 1fr; gap: 48px; text-align: left;
+    padding: 56px 32px;
+  }
+  .hero-years { font-size: 120px; }
+  .hero-stats div { padding: 22px 18px; }
+  .hero-stats b { font-size: 32px; }
+  .hero-stats span { font-size: 13px; }
+}
 
 /* CTA */
 .cta-strip { background: #F02D3A; color: #fff; text-align: center; }
@@ -165,6 +181,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #F02D3A
 .muted { color: #9197AE; }
 
 @media (max-width: 520px) {
-  .hero-years { font-size: 72px; }
+  .hero-years { font-size: 80px; }
   .bubble { max-width: 100%; }
 }
