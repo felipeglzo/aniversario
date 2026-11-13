@@ -93,7 +93,7 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
 @media (min-width: 760px) {
   .hero-inner {
     grid-template-columns: 1fr 1fr; gap: 48px; text-align: left;
-    padding: 56px 32px;
+    padding: 76px 32px 108px;
   }
   .hero-main { text-align: center; }
   .hero-years { font-size: 120px; }
