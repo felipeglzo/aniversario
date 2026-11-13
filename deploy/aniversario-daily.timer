@@ -1,0 +1,10 @@
+[Unit]
+Description=Correr la tarea diaria del aniversario a las 8:00 (hora Vancouver)
+
+[Timer]
+# El droplet se configura en UTC; esta expresión usa la zona del calendario.
+OnCalendar=*-*-* 08:00:00 America/Vancouver
+Persistent=true
+
+[Install]
+WantedBy=timers.target

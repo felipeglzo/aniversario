@@ -1,0 +1,22 @@
+{
+  "name": "aniversario",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App privada de aniversario: recuerdos anuales + correo del 24 de noviembre",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "daily": "node scripts/daily.js",
+    "backup": "node scripts/backup.js",
+    "preview-email": "node scripts/preview-email.js",
+    "set-password": "node scripts/set-password.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^4.21.2",
+    "multer": "^2.5.0"
+  }
+}

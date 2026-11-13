@@ -1,0 +1,8 @@
+[Unit]
+Description=Tarea diaria del aniversario (correos y respaldos)
+
+[Service]
+Type=oneshot
+User=aniversario
+WorkingDirectory=/opt/aniversario
+ExecStart=/usr/bin/node scripts/daily.js

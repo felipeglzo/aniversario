@@ -1,0 +1,21 @@
+[Unit]
+Description=App de aniversario (sitio web)
+After=network.target
+
+[Service]
+Type=simple
+User=aniversario
+WorkingDirectory=/opt/aniversario
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+# Endurecimiento básico
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/aniversario/data
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
