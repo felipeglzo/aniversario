@@ -117,7 +117,7 @@ main { max-width: 680px; margin: 0 auto; padding: 20px 14px 60px; }
 .year-block h2::before {
   content: ""; position: absolute; top: 50%; left: 50%;
   width: 100vw; height: 1px; transform: translateX(-50%);
-  background: rgba(243, 85, 96, .5);
+  background: rgba(243, 85, 96, .15);
 }
 .year-badge {
   background: #F35560; color: #fff; font-weight: 900; font-size: 26px;
