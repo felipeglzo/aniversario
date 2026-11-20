@@ -21,6 +21,35 @@
   setInterval(tick, 1000);
 })();
 
+// Cifras del hero: cada dígito gira como un rodillo hasta su número (una vez por visita).
+(function () {
+  const nums = [...document.querySelectorAll('.stats b')];
+  if (!nums.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try { if (sessionStorage.getItem('rodillos')) return; sessionStorage.setItem('rodillos', '1'); } catch (_) { /* sin almacenamiento: anima siempre */ }
+  nums.forEach((el, ci) => {
+    const value = el.textContent.trim();
+    el.setAttribute('aria-label', value);
+    el.textContent = '';
+    let di = 0;
+    for (const ch of value) {
+      if (!/\d/.test(ch)) { const s = document.createElement('span'); s.textContent = ch; s.setAttribute('aria-hidden', 'true'); el.appendChild(s); continue; }
+      const col = document.createElement('span'); col.className = 'odo-col'; col.setAttribute('aria-hidden', 'true');
+      const strip = document.createElement('span'); strip.className = 'odo-strip';
+      const loops = 2 + di, target = Number(ch);
+      for (let l = 0; l < loops; l++) for (let d = 0; d < 10; d++) strip.appendChild(Object.assign(document.createElement('span'), { textContent: d }));
+      for (let d = 0; d <= target; d++) strip.appendChild(Object.assign(document.createElement('span'), { textContent: d }));
+      col.appendChild(strip); el.appendChild(col);
+      const steps = loops * 10 + target, delay = 250 + ci * 120 + di * 90, dur = 1.3 + di * 0.18;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        strip.style.transition = `transform ${dur}s cubic-bezier(.16,1,.3,1) ${delay}ms`;
+        strip.style.transform = `translateY(-${steps * 1.15}em)`;
+      }));
+      di++;
+    }
+  });
+})();
+
 // Menú de usuario (avatar → dropdown).
 (function () {
   const btn = document.getElementById('avatar-btn');
@@ -72,20 +101,16 @@
   box.setAttribute('aria-label', 'Foto en grande');
   box.innerHTML = '<button type="button" class="lb-close" aria-label="Cerrar">&times;</button>' +
     '<div class="lb-stage"><img class="lb-img" alt=""></div>' +
-    '<p class="lb-caption"></p><p class="lb-hint"></p>';
+    '<p class="lb-caption"></p>';
   document.body.appendChild(box);
   const stage = box.querySelector('.lb-stage');
   const img = box.querySelector('.lb-img');
   const caption = box.querySelector('.lb-caption');
-  const hint = box.querySelector('.lb-hint');
   const closeBtn = box.querySelector('.lb-close');
-  let lastPointer = window.matchMedia('(hover: none)').matches ? 'touch' : 'mouse';
-  document.addEventListener('pointerdown', e => { lastPointer = e.pointerType; }, true);
-
   let s = 1, tx = 0, ty = 0, source = null, lastFocus = null;
   const MAX = 5;
   const pointers = new Map();
-  let gesture = null, lastTap = 0, hintTimer = null;
+  let gesture = null, lastTap = 0;
 
   const center = () => { const r = stage.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; };
   function clamp() {
@@ -122,9 +147,6 @@
     document.documentElement.classList.add('lb-open');
     const pol = el.closest('.polaroid'); if (pol) pol.classList.add('straight');
     requestAnimationFrame(() => box.classList.add('show'));
-    hint.textContent = lastPointer === 'touch' ? 'Pellizca para acercar · desliza hacia abajo para cerrar' : 'Rueda o doble clic para acercar · Esc para cerrar';
-    hint.classList.add('show'); clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => hint.classList.remove('show'), 2600);
     closeBtn.focus({ preventScroll: true });
   }
   function close() {

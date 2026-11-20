@@ -171,8 +171,8 @@ button { font: inherit; }
 .hero-side-title { margin: 0; font-family: var(--serif); font-size: 30px; line-height: 1.2; color: rgba(255,255,255,0.92); }
 .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .stats div { padding: 18px 20px; border-radius: 20px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); }
-.stats b { display: block; font-size: 34px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.stats span { display: block; margin-top: 2px; font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.25; color: rgba(255,255,255,0.8); }
+.stats b { display: block; line-height: 1.15; font-size: 34px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stats > div > span { display: block; margin-top: 2px; font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.25; color: rgba(255,255,255,0.8); }
 .milestone { padding-top: 6px; }
 .milestone-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 10px; }
 .milestone-row b { color: #fff; }
@@ -197,7 +197,7 @@ button { font: inherit; }
   .stats { gap: 10px; }
   .stats div { padding: 14px; border-radius: 16px; }
   .stats b { font-size: 26px; }
-  .stats span { font-size: 16px; }
+  .stats > div > span { font-size: 16px; }
   .milestone-row { font-size: 12px; }
   .milestone-bar { height: 8px; }
   .sheet { margin-top: -36px; border-radius: 36px 36px 0 0; }
@@ -579,13 +579,11 @@ html.lb-open, html.lb-open body { overflow: hidden; }
 .lb-close:hover { background: rgba(255,255,255,0.2); }
 .lb-caption { position: absolute; left: 0; right: 0; bottom: 24px; margin: 0; text-align: center; font-family: Caveat, cursive; font-size: 26px; color: rgba(255,255,255,0.9); pointer-events: none; }
 .lightbox.zoomed .lb-caption { opacity: 0; }
-.lb-hint {
-  position: absolute; top: 22px; left: 50%; transform: translateX(-50%); margin: 0; padding: 7px 14px; border-radius: 999px;
-  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); font-size: 13px; white-space: nowrap; pointer-events: none;
-  opacity: 0; transition: opacity .4s ease;
-}
-.lb-hint.show { opacity: 1; }
 @media (max-width: 759px) {
   .lb-stage { inset: 64px 8px 64px; }
-  .lb-hint { top: auto; bottom: 70px; font-size: 12px; }
 }
+
+/* ---------- Rodillos de las cifras ---------- */
+.odo-col { display: inline-block; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: top; }
+.odo-strip { display: flex; flex-direction: column; will-change: transform; }
+.odo-strip span { display: block; height: 1.15em; }
