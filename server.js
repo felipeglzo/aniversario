@@ -35,6 +35,13 @@ app.get('/avatars/:file', (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
+// Imágenes generadas para los correos (número del año, polaroids): públicas, nombres imposibles de adivinar.
+app.get('/correo/:file', (req, res, next) => {
+  if (!/^(numero-\d{1,3}\.png|p-[a-f0-9]{24}\.jpg)$/.test(req.params.file)) return next();
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(require('./lib/emailImages').OUT_DIR, req.params.file), err => err && next());
+});
+
 // Fotos: solo con sesión iniciada.
 app.use('/fotos', (req, res, next) => {
   if (!req.user) return res.redirect('/login');
@@ -193,10 +200,10 @@ app.post('/recuperar', async (req, res) => {
     db.prepare('INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
       .run(hashToken(token), user.id, now + RESET_TTL);
     try {
-      const { buildResetEmail } = require('./lib/resetEmail');
+      const { buildResetEmail } = require('./lib/emailTemplate');
       const { sendEmail } = require('./lib/mailer');
       const { subject, html } = buildResetEmail({
-        name: user.display_name, link: `${config.SITE_URL}/nueva-contrasena?t=${token}`
+        name: user.display_name, username: user.username, link: `${config.SITE_URL}/nueva-contrasena?t=${token}`
       });
       const to = user.username === 'felipe' ? config.MAIL_TO_FELIPE : config.MAIL_TO_FERNANDA;
       await sendEmail({ to: [to], subject, html });
@@ -369,14 +376,13 @@ app.post('/prueba-correo', auth.requireLogin, async (req, res) => {
   if (req.user.username !== 'felipe') return res.status(403).redirect('/');
   if (Date.now() - lastTestMail < 60000) return res.redirect('/?prueba=espera');
   try {
-    const { buildEmail } = require('./lib/emailTemplate');
+    const { buildEmail, withBanner } = require('./lib/emailTemplate');
     const { sendEmail } = require('./lib/mailer');
-    const { asunto, htmlBody } = buildEmail({}); // commit: false → no marca recuerdos
+    const { asunto, htmlBody } = await buildEmail({}); // commit: false → no marca recuerdos
     await sendEmail({
       to: [config.MAIL_TO_FELIPE],
       subject: `[PRUEBA] ${asunto}`,
-      html: `<p style="font-family:Arial;background:#fff3cd;padding:10px;border-radius:8px;">
-        🧪 Correo de prueba enviado desde el sitio. El recuerdo mostrado NO queda gastado.</p>` + htmlBody
+      html: withBanner(htmlBody, 'Correo de prueba enviado desde el sitio. El recuerdo mostrado NO queda gastado.')
     });
     lastTestMail = Date.now();
     res.redirect('/?prueba=ok');

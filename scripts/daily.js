@@ -7,7 +7,7 @@
 // Idempotente: email_log evita envíos dobles aunque corra dos veces.
 const config = require('../lib/config');
 const db = require('../lib/db');
-const { buildEmail } = require('../lib/emailTemplate');
+const { buildEmail, withBanner } = require('../lib/emailTemplate');
 const { pickMemoriesForEmail } = require('../lib/memories');
 const { isAnniversaryToday, isTestMailDay, todayParts, stats } = require('../lib/dates');
 const { sendEmail } = require('../lib/mailer');
@@ -22,13 +22,11 @@ async function main() {
   const year = todayParts().y;
 
   if (isTestMailDay() && !already('test', year)) {
-    const { asunto, htmlBody } = buildEmail({}); // sin commit: no gasta recuerdos
+    const { asunto, htmlBody } = await buildEmail({}); // sin commit: no gasta recuerdos
     await sendEmail({
       to: [config.MAIL_TO_FELIPE],
       subject: `[PRUEBA ${year}] ${asunto}`,
-      html: `<p style="font-family:Arial;background:#fff3cd;padding:10px;border-radius:8px;">
-        🧪 Correo de prueba anual. Si lo estás leyendo, el sistema está vivo y así se verá el correo del 24.
-        El recuerdo mostrado NO queda gastado.</p>` + htmlBody
+      html: withBanner(htmlBody, 'Correo de prueba anual. Si lo estás leyendo, el sistema está vivo y así se verá el correo del 24. El recuerdo mostrado NO queda gastado.')
     });
     log('test', year, 'ok');
     console.log('Correo de prueba enviado.');
@@ -36,7 +34,7 @@ async function main() {
 
   if (isAnniversaryToday() && !already('anniversary', year)) {
     const picked = pickMemoriesForEmail(year, { commit: true });
-    const { asunto, htmlBody } = buildEmail({ picked });
+    const { asunto, htmlBody } = await buildEmail({ picked });
     const to = [config.MAIL_TO_FELIPE, config.MAIL_TO_FERNANDA].filter(Boolean);
     await sendEmail({ to, subject: asunto, html: htmlBody });
     log('anniversary', year, picked ? `año citado: ${picked.year}` : 'sin recuerdos aún');
@@ -55,7 +53,7 @@ async function main() {
       const kind = `reminder-${p.username}`;
       const wrote = db.prepare('SELECT 1 FROM memories WHERE user_id = ? AND year = ?').get(p.id, year);
       if (wrote || !p.to || already(kind, year)) continue;
-      const { asunto, htmlBody } = buildReminder({ name: p.name, year });
+      const { asunto, htmlBody } = buildReminder({ name: p.name, username: p.username, year });
       await sendEmail({ to: [p.to], subject: asunto, html: htmlBody });
       log(kind, year, 'ok');
       console.log('Recordatorio enviado a', p.name);
