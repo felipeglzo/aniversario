@@ -136,31 +136,30 @@ function readMemoryForm(req) {
 
 // ---------- Entrar / salir ----------
 app.get('/login', (req, res) => {
-  if (req.user) return res.redirect('/');
-  res.send(views.loginPage({ users: allUsers() }));
+  if (req.user) return res.redirect(auth.safeNext(req.query.next));
+  res.send(views.loginPage({ users: allUsers(), next: auth.safeNext(req.query.next) }));
 });
 
 app.post('/login', (req, res) => {
   const username = String(req.body.username || '').toLowerCase();
   const password = String(req.body.password || '');
   const users = allUsers();
+  const next = auth.safeNext(req.body.next);
   if (auth.checkLock(username)) {
-    return res.status(429).send(views.loginPage({ users, username, error: 'Demasiados intentos. Espera 15 minutos.' }));
+    return res.status(429).send(views.loginPage({ users, username, next, error: 'Demasiados intentos. Espera 15 minutos.' }));
   }
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user || !auth.verifyPassword(password, user.password_hash)) {
     auth.recordFail(username);
-    return res.status(401).send(views.loginPage({ users, username, error: 'Esa contraseña no es. Intenta otra vez.' }));
+    return res.status(401).send(views.loginPage({ users, username, next, error: 'Esa contraseña no es. Intenta otra vez.' }));
   }
   auth.clearFails(username);
   setSession(res, user.id);
-  res.redirect('/');
+  res.redirect(next);
 });
 
 function setSession(res, userId) {
-  const cookie = auth.makeSessionCookie(userId);
-  res.setHeader('Set-Cookie',
-    `aniv_session=${cookie}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${auth.SESSION_DAYS * 86400}${config.SITE_URL.startsWith('https') ? '; Secure' : ''}`);
+  res.setHeader('Set-Cookie', auth.sessionCookieHeader(userId));
 }
 
 app.post('/logout', (req, res) => {
