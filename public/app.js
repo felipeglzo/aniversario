@@ -57,15 +57,170 @@
   if (f.classList.contains('flash-info')) setTimeout(close, 6000);
 })();
 
-// Polaroids: con mouse se enderezan al pasar encima (CSS); con el dedo, al tocarlas.
+// Fotos en grande (polaroids y fotos de perfil del cofre): se abren encima de la página.
+// Celular: pellizcar para zoom, arrastrar para mover, deslizar hacia abajo para cerrar.
+// Compu: rueda o doble clic para acercar, arrastrar para mover, Esc para cerrar.
 (function () {
-  const touch = window.matchMedia('(hover: none)').matches;
-  if (!touch) return;
+  const items = () => [...document.querySelectorAll('img[data-zoom]')];
+  if (!items().length) return;
+
+  const box = document.createElement('div');
+  box.className = 'lightbox';
+  box.hidden = true;
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', 'Foto en grande');
+  box.innerHTML = '<button type="button" class="lb-close" aria-label="Cerrar">&times;</button>' +
+    '<div class="lb-stage"><img class="lb-img" alt=""></div>' +
+    '<p class="lb-caption"></p><p class="lb-hint"></p>';
+  document.body.appendChild(box);
+  const stage = box.querySelector('.lb-stage');
+  const img = box.querySelector('.lb-img');
+  const caption = box.querySelector('.lb-caption');
+  const hint = box.querySelector('.lb-hint');
+  const closeBtn = box.querySelector('.lb-close');
+  let lastPointer = window.matchMedia('(hover: none)').matches ? 'touch' : 'mouse';
+  document.addEventListener('pointerdown', e => { lastPointer = e.pointerType; }, true);
+
+  let s = 1, tx = 0, ty = 0, source = null, lastFocus = null;
+  const MAX = 5;
+  const pointers = new Map();
+  let gesture = null, lastTap = 0, hintTimer = null;
+
+  const center = () => { const r = stage.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; };
+  function clamp() {
+    const c = center();
+    const w = img.offsetWidth * s, h = img.offsetHeight * s;
+    const lx = Math.max(0, (w - Math.min(img.offsetWidth, c.w)) / 2, (w - c.w) / 2);
+    const ly = Math.max(0, (h - Math.min(img.offsetHeight, c.h)) / 2, (h - c.h) / 2);
+    tx = Math.max(-lx, Math.min(lx, tx));
+    ty = Math.max(-ly, Math.min(ly, ty));
+  }
+  function apply(animate) {
+    img.style.transition = animate ? 'transform .25s ease' : 'none';
+    img.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    box.classList.toggle('zoomed', s > 1.01);
+  }
+  // Acerca/aleja manteniendo fijo el punto (px, py) de la pantalla.
+  function zoomAt(ns, px, py, animate) {
+    ns = Math.max(1, Math.min(MAX, ns));
+    const c = center();
+    const ux = (px - c.x - tx) / s, uy = (py - c.y - ty) / s;
+    s = ns; tx = px - c.x - ux * s; ty = py - c.y - uy * s;
+    if (s === 1) { tx = 0; ty = 0; }
+    clamp(); apply(animate);
+  }
+
+  function open(el) {
+    source = el; lastFocus = document.activeElement;
+    s = 1; tx = 0; ty = 0; apply(false);
+    img.src = el.currentSrc || el.src;
+    img.alt = el.alt || '';
+    caption.textContent = el.dataset.caption || '';
+    box.classList.toggle('lb-avatar', !el.closest('.polaroid'));
+    box.hidden = false;
+    document.documentElement.classList.add('lb-open');
+    const pol = el.closest('.polaroid'); if (pol) pol.classList.add('straight');
+    requestAnimationFrame(() => box.classList.add('show'));
+    hint.textContent = lastPointer === 'touch' ? 'Pellizca para acercar · desliza hacia abajo para cerrar' : 'Rueda o doble clic para acercar · Esc para cerrar';
+    hint.classList.add('show'); clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => hint.classList.remove('show'), 2600);
+    closeBtn.focus({ preventScroll: true });
+  }
+  function close() {
+    if (box.hidden) return;
+    box.classList.remove('show');
+    const pol = source && source.closest('.polaroid'); if (pol) pol.classList.remove('straight');
+    document.documentElement.classList.remove('lb-open');
+    setTimeout(() => { box.hidden = true; img.removeAttribute('src'); img.style.opacity = ''; box.style.background = ''; }, 200);
+    pointers.clear(); gesture = null;
+    if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+  }
+
   document.addEventListener('click', e => {
-    const p = e.target.closest('.polaroid');
-    document.querySelectorAll('.polaroid.straight').forEach(x => { if (x !== p) x.classList.remove('straight'); });
-    if (p) p.classList.toggle('straight');
+    const el = e.target.closest('img[data-zoom]');
+    if (el) { e.preventDefault(); open(el); }
   });
+  document.addEventListener('keydown', e => {
+    if (!box.hidden && e.key === 'Escape') close();
+    const el = e.target.closest && e.target.closest('img[data-zoom]');
+    if (el && box.hidden && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(el); }
+  });
+  closeBtn.addEventListener('click', close);
+  img.addEventListener('dragstart', e => e.preventDefault());
+
+  // Rueda (compu)
+  box.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomAt(s * Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY, false);
+  }, { passive: false });
+  // Doble clic (compu)
+  img.addEventListener('dblclick', e => { zoomAt(s > 1.01 ? 1 : 2.5, e.clientX, e.clientY, true); });
+
+  // Dedos y mouse: pellizcar, mover, doble toque, deslizar para cerrar.
+  box.addEventListener('pointerdown', e => {
+    if (e.target === closeBtn) return;
+    box.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...pointers.values()];
+    if (pts.length === 2) {
+      const [a, b] = pts;
+      gesture = { type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y), mid0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, s0: s, tx0: tx, ty0: ty };
+    } else if (pts.length === 1) {
+      gesture = { type: 'pan', x0: e.clientX, y0: e.clientY, tx0: tx, ty0: ty, moved: false, onImg: e.target === img, t: Date.now() };
+    }
+  });
+  box.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId) || !gesture) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...pointers.values()];
+    if (gesture.type === 'pinch' && pts.length === 2) {
+      const [a, b] = pts;
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const c = center();
+      const ns = Math.max(1, Math.min(MAX, gesture.s0 * d / gesture.d0));
+      const ux = (gesture.mid0.x - c.x - gesture.tx0) / gesture.s0, uy = (gesture.mid0.y - c.y - gesture.ty0) / gesture.s0;
+      s = ns; tx = mid.x - c.x - ux * s; ty = mid.y - c.y - uy * s;
+      clamp(); apply(false);
+    } else if (gesture.type === 'pan') {
+      const dx = e.clientX - gesture.x0, dy = e.clientY - gesture.y0;
+      if (Math.abs(dx) + Math.abs(dy) > 6) gesture.moved = true;
+      if (s > 1.01) { tx = gesture.tx0 + dx; ty = gesture.ty0 + dy; clamp(); apply(false); }
+      else if (e.pointerType !== 'mouse' && dy > 0) {   // deslizar hacia abajo para cerrar
+        ty = dy; apply(false);
+        img.style.opacity = String(Math.max(0.3, 1 - dy / 400));
+        box.style.background = `rgba(18,15,42,${Math.max(0.3, 0.94 - dy / 500)})`;
+      }
+    }
+  });
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (!gesture) return;
+    if (gesture.type === 'pinch') {
+      if (pointers.size === 1) {        // queda un dedo: sigue moviendo desde aquí
+        const p = [...pointers.values()][0];
+        gesture = { type: 'pan', x0: p.x, y0: p.y, tx0: tx, ty0: ty, moved: true };
+      } else gesture = null;
+      if (s < 1.05) { s = 1; tx = 0; ty = 0; apply(true); }
+      return;
+    }
+    const g = gesture; gesture = null;
+    if (s <= 1.01 && ty > 110 && e.pointerType !== 'mouse') { close(); return; }
+    if (s <= 1.01 && ty !== 0) { ty = 0; img.style.opacity = ''; box.style.background = ''; apply(true); }
+    if (!g.moved) {
+      const now = Date.now();
+      if (e.pointerType !== 'mouse' && g.onImg && now - lastTap < 300) {   // doble toque
+        zoomAt(s > 1.01 ? 1 : 2.5, e.clientX, e.clientY, true); lastTap = 0; return;
+      }
+      lastTap = now;
+      if (!g.onImg && s <= 1.01) close();   // toque fuera de la foto
+    }
+  }
+  box.addEventListener('pointerup', endPointer);
+  box.addEventListener('pointercancel', endPointer);
+  window.addEventListener('resize', () => { if (!box.hidden) { clamp(); apply(false); } });
 })();
 
 // ---------- Pantalla de escribir ----------
