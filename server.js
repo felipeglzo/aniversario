@@ -113,7 +113,7 @@ app.post('/borrador', jsonBody, (req, res) => {
   const b = req.body || {};
   const target = String(b.target || '');
   if (!draftTargetAllowed(req.user, target)) return res.status(400).json({ ok: false });
-  const body = [...String(b.body || '')].slice(0, MAX_BODY).join('');
+  const body = [...String(b.body || '')].slice(0, MAX_BODY * 2).join(''); // con marcas ==resaltado==
   const song = String(b.song || '').slice(0, 200);
   const songUrl = String(b.song_url || '').slice(0, 500);
   if (!body.trim() && !song.trim() && !songUrl.trim()) {
@@ -143,14 +143,14 @@ function warmPreview(userId, year) {
 // Lee y valida lo que viene del formulario de recuerdo.
 function readMemoryForm(req) {
   const values = {
-    body: String(req.body.body || '').replace(/\r\n/g, '\n').trim(),
+    body: require('./lib/marks').clean(String(req.body.body || '').replace(/\r\n/g, '\n').trim()),
     song: String(req.body.song || '').trim().slice(0, 200),
     song_url: String(req.body.song_url || '').trim().slice(0, 500)
   };
   if (values.song_url && !/^https?:\/\//i.test(values.song_url)) values.song_url = '';
   let error = req.uploadError || null;
   if (!values.body) error = 'El recuerdo no puede ir vacío.';
-  else if ([...values.body].length > MAX_BODY) error = `El recuerdo puede tener hasta ${MAX_BODY} caracteres.`;
+  else if ([...require('./lib/marks').plain(values.body)].length > MAX_BODY || values.body.length > MAX_BODY * 2) error = `El recuerdo puede tener hasta ${MAX_BODY} caracteres.`;
   return { values, error };
 }
 

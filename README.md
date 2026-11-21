@@ -25,6 +25,9 @@ anuales, más el correo automático de cada 24 de noviembre.
   dice «Por Fernanda · 26 nov». Los nuevos se avisan en el inicio («Fernanda te dejó un
   sticker en 2024 →») y se pegan frente a ti al verlos. Salen también en la polaroid del
   correo (necesita `fonts-noto-color-emoji` en el servidor).
+- **Resaltar y lectura** (lib/marks.js): al escribir, seleccionas texto y tocas «Resaltar»; se
+  guarda como ==frase== y se pinta con fondo de color por renglón y letra blanca (coral/lila).
+  Un recuerdo largo deja su primer párrafo como entrada en serif y el resto en letra normal.
 - **Números** (/numeros, lib/events.js y lib/numbers.js): «Nuestro cofre en números», visible
   para los dos. Una marca por día y por cosa: visita (celular/compu), llegada desde el botón
   de un correo (?desde=…), foto abierta, canción escuchada; más lo que ya se sabía (cuándo

@@ -337,6 +337,56 @@ function note(kind, ref) {
   });
 })();
 
+// Resaltados del recuerdo: se guardan como ==frase== (nunca cruzan renglones).
+const Marks = {
+  parse(raw) {
+    const ranges = []; let text = '', i = 0, m;
+    const re = /==([^\n]+?)==/g;
+    while ((m = re.exec(raw))) { text += raw.slice(i, m.index); ranges.push([text.length, text.length + m[1].length]); text += m[1]; i = m.index + m[0].length; }
+    return { text: text + raw.slice(i), ranges };
+  },
+  // Junta los que se tocan, recorta espacios en las orillas y parte en cada salto de línea.
+  normalize(text, ranges) {
+    const out = [];
+    ranges.slice().sort((a, b) => a[0] - b[0]).forEach(([a, b]) => {
+      a = Math.max(0, a); b = Math.min(text.length, b);
+      let k = a;
+      for (let j = a; j <= b; j++) {
+        if (j === b || text[j] === '\n') {
+          let x = k, y = j;
+          while (x < y && /\s/.test(text[x])) x++;
+          while (y > x && /\s/.test(text[y - 1])) y--;
+          if (y > x) { const last = out[out.length - 1]; if (last && x <= last[1] && !text.slice(last[1], x).includes('\n')) last[1] = Math.max(last[1], y); else out.push([x, y]); }
+          k = j + 1;
+        }
+      }
+    });
+    return out;
+  },
+  serialize(text, ranges) {
+    let out = '', i = 0;
+    Marks.normalize(text, ranges).forEach(([a, b]) => { out += text.slice(i, a) + '==' + text.slice(a, b) + '=='; i = b; });
+    return out + text.slice(i);
+  },
+  // Al escribir, los resaltados se mueven con su texto.
+  shift(ranges, before, after) {
+    let p = 0; while (p < before.length && p < after.length && before[p] === after[p]) p++;
+    let q = 0; while (q < before.length - p && q < after.length - p && before[before.length - 1 - q] === after[after.length - 1 - q]) q++;
+    const oldEnd = before.length - q, delta = after.length - before.length;
+    return ranges.map(([a, b]) => {
+      if (b <= p) return [a, b];
+      if (a >= oldEnd) return [a + delta, b + delta];
+      return [Math.min(a, p), Math.max(p, b + delta)];
+    }).filter(([a, b]) => b > a);
+  },
+  esc: (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+  html(text, ranges) {
+    let out = '', i = 0;
+    Marks.normalize(text, ranges).forEach(([a, b]) => { out += Marks.esc(text.slice(i, a)) + '<mark>' + Marks.esc(text.slice(a, b)) + '</mark>'; i = b; });
+    return out + Marks.esc(text.slice(i));
+  }
+};
+
 // Inicio: la barra empieza transparente y se funde a vidrio oscuro cuando el cofre se acerca.
 (function () {
   if (!document.body.classList.contains('home')) return;
@@ -649,7 +699,6 @@ function note(kind, ref) {
 
   // Vista previa
   const pvTitle = document.getElementById('pv-title');
-  const pvText = document.getElementById('pv-text');
   const pvQuote = document.getElementById('pv-quote');
   const pvSong = document.getElementById('pv-song');
   const pvSongText = document.getElementById('pv-song-text');
@@ -667,12 +716,65 @@ function note(kind, ref) {
   let newPhotoChosen = false;
 
   const len = s => [...s].length;
-  const snapshot = () => JSON.stringify({ body: ta.value, song: song.value, song_url: songUrl.value });
+
+  // ---- Resaltar: el cuadro guarda texto limpio; los resaltados viajan en un campo oculto ----
+  let ranges = [];
+  let selRange = null;
+  const hlBtn = document.getElementById('hl-btn');
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden'; hidden.name = 'body';
+  { const p = Marks.parse(ta.value); ta.value = p.text; ranges = p.ranges; }
+  ta.removeAttribute('name');
+  form.appendChild(hidden);
+  const editor = document.createElement('div'); editor.className = 'editor';
+  const layer = document.createElement('div'); layer.className = 'editor-layer'; layer.setAttribute('aria-hidden', 'true');
+  ta.parentNode.insertBefore(editor, ta); editor.appendChild(layer); editor.appendChild(ta);
+  const rawBody = () => Marks.serialize(ta.value, ranges);
+  function paintLayer() {
+    layer.innerHTML = ta.value ? Marks.html(ta.value, ranges) + '\n ' : `<span class="ph">${Marks.esc(ta.placeholder)}</span>`;
+    hidden.value = rawBody();
+  }
+  function overlapping(a, b) { return Marks.normalize(ta.value, ranges).filter(([x, y]) => x < b && y > a); }
+  function updateBtn() {
+    const on = !!selRange;
+    hlBtn.classList.toggle('on', on);
+    hlBtn.setAttribute('aria-disabled', String(!on));
+    const over = on && overlapping(selRange[0], selRange[1]).length > 0;
+    hlBtn.setAttribute('aria-pressed', String(over));
+    hlBtn.querySelector('span').textContent = over ? 'Quitar' : 'Resaltar';
+    hlBtn.setAttribute('aria-label', over ? 'Quitar el resaltado' : 'Resaltar lo seleccionado');
+  }
+  function readSel() {
+    if (document.activeElement !== ta) return;
+    const a = ta.selectionStart, b = ta.selectionEnd;
+    selRange = b > a ? [a, b] : null;
+    updateBtn();
+  }
+  ['select', 'keyup', 'mouseup', 'touchend'].forEach(ev => ta.addEventListener(ev, readSel));
+  document.addEventListener('selectionchange', readSel);
+  hlBtn.hidden = false;
+  hlBtn.addEventListener('mousedown', e => e.preventDefault()); // no le quita el foco al cuadro
+  hlBtn.addEventListener('click', () => {
+    if (!selRange) return;
+    const [a, b] = selRange;
+    const norm = Marks.normalize(ta.value, ranges);
+    const over = norm.filter(([x, y]) => x < b && y > a);
+    ranges = over.length ? norm.filter(r => !over.includes(r)) : Marks.normalize(ta.value, norm.concat([[a, b]]));
+    selRange = null;
+    paintLayer(); updateBtn(); render(); schedule();
+    ta.focus({ preventScroll: true }); ta.setSelectionRange(b, b);
+  });
+  let lastText = ta.value;
+  ta.addEventListener('input', () => { ranges = Marks.shift(ranges, lastText, ta.value); lastText = ta.value; paintLayer(); });
+  paintLayer();
+
+  const snapshot = () => JSON.stringify({ body: rawBody(), song: song.value, song_url: songUrl.value });
   const initial = snapshot();
   const hadDraft = !status.hidden;
 
   // El textarea crece con el texto (field-sizing donde exista; si no, a mano).
   const autoGrow = () => {
+    if (ta.parentNode.classList.contains('editor')) return; // la capa de texto da la altura
     if (CSS.supports && CSS.supports('field-sizing', 'content')) return;
     ta.style.height = 'auto';
     ta.style.height = Math.max(200, ta.scrollHeight + 4) + 'px';
@@ -683,8 +785,21 @@ function note(kind, ref) {
     const n = len(ta.value);
     count.textContent = n;
     count.parentElement.classList.toggle('near', n > MAX - 50);
-    pvText.textContent = text || 'Tu historia aparecerá aquí. Empieza a contarla…';
+    // Vista previa: párrafos (si es largo, la entrada en serif y el resto en letra normal) con resaltados.
+    const lines = [];
+    { let pos = 0; ta.value.split('\n').forEach(line => { const st = pos; pos += line.length + 1; if (line.trim()) lines.push([st, st + line.length]); }); }
+    const long = lines.length > 1 || len(text) > 220;
+    const norm = Marks.normalize(ta.value, ranges);
+    pvQuote.classList.toggle('long', long);
     pvQuote.classList.toggle('empty-text', !text);
+    pvQuote.innerHTML = !text ? '<p><span aria-hidden="true">“</span>Tu historia aparecerá aquí. Empieza a contarla…<span aria-hidden="true">”</span></p>'
+      : lines.map(([a, b], i) => {
+        const rs = norm.filter(([x, y]) => x < b && y > a).map(([x, y]) => [Math.max(x, a) - a, Math.min(y, b) - a]);
+        const seg = ta.value.slice(a, b);
+        const lead = seg.length - seg.trimStart().length;
+        const body = Marks.html(seg.trim(), rs.map(([x, y]) => [x - lead, y - lead]));
+        return `<p>${i === 0 ? '<span aria-hidden="true">“</span>' : ''}${body}${i === lines.length - 1 ? '<span aria-hidden="true">”</span>' : ''}</p>`;
+      }).join('');
     const songLabel = song.value.trim() || (songUrl.value.trim() ? 'Escúchala aquí' : '');
     pvSong.hidden = !songLabel;
     pvSongText.textContent = songLabel;
