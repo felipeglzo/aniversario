@@ -3,6 +3,7 @@
 // - 10 nov: correo de PRUEBA solo a Felipe (verifica que todo vive).
 // - 24 nov: correo de ANIVERSARIO a ambos (elige y marca recuerdos).
 // - 1 dic:  RECORDATORIO solo a quien no ha escrito su recuerdo del año.
+// - 1 ene:  se abre el cofre del año anterior aunque falte uno, y les llega el correo.
 // - lunes:  respaldo local; por correo a Felipe cada trimestre y el 24 nov.
 // Idempotente: email_log evita envíos dobles aunque corra dos veces.
 const config = require('../lib/config');
@@ -53,11 +54,21 @@ async function main() {
       const kind = `reminder-${p.username}`;
       const wrote = db.prepare('SELECT 1 FROM memories WHERE user_id = ? AND year = ?').get(p.id, year);
       if (wrote || !p.to || already(kind, year)) continue;
-      const { asunto, htmlBody } = buildReminder({ name: p.name, username: p.username, year });
+      const other = people.find(o => o.id !== p.id);
+      const otherWrote = !!db.prepare('SELECT 1 FROM memories WHERE user_id = ? AND year = ? AND is_placeholder = 0').get(other.id, year);
+      const { asunto, htmlBody } = buildReminder({ name: p.name, username: p.username, year, otherName: otherWrote ? other.name : null });
       await sendEmail({ to: [p.to], subject: asunto, html: htmlBody });
       log(kind, year, 'ok');
       console.log('Recordatorio enviado a', p.name);
     }
+  }
+
+  // Revelación por fecha: desde 2026, el 1 de enero se abre el año anterior aunque falte uno.
+  // Corre todos los días (si un día falló, lo alcanza al siguiente); cada año se abre una vez.
+  const reveal = require('../lib/reveal');
+  for (const y of reveal.openOverdue(t)) {
+    console.log(`Cofre de ${y} abierto por fecha.`);
+    await reveal.sendRevealEmail(y).catch(err => console.error('Correo de revelación falló:', err.message));
   }
 
   // Respaldo semanal (lunes) + siempre el día del aniversario.

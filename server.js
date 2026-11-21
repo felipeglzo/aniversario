@@ -9,6 +9,7 @@ const auth = require('./lib/auth');
 const views = require('./lib/views');
 const { allMemoriesByYear } = require('./lib/memories');
 const { creationWindowOpen, todayParts } = require('./lib/dates');
+const reveal = require('./lib/reveal');
 
 const MAX_BODY = 1000; // caracteres por recuerdo
 
@@ -42,11 +43,22 @@ app.get('/correo/:file', (req, res, next) => {
   res.sendFile(path.join(require('./lib/emailImages').OUT_DIR, req.params.file), err => err && next());
 });
 
-// Fotos: solo con sesión iniciada.
+// Fotos: solo con sesión iniciada, y la del otro solo cuando su año ya se reveló.
+// Un archivo que ya no pertenece a ningún recuerdo (foto reemplazada) no se sirve.
 app.use('/fotos', (req, res, next) => {
   if (!req.user) return res.redirect('/login');
+  const file = decodeURIComponent(req.path.replace(/^\//, ''));
+  const mem = db.prepare('SELECT id, user_id, year, is_placeholder FROM memories WHERE photo = ?').get(file);
+  if (!mem || !reveal.canSee(mem, req.user)) return res.status(404).end();
+  res.set('Cache-Control', 'private, max-age=604800');
   next();
-}, express.static(config.PHOTOS_DIR, { maxAge: '7d' }));
+}, express.static(config.PHOTOS_DIR, { maxAge: 0, cacheControl: false }));
+
+// Si con este recuerdo ya están los dos, el año se abre y les llega el correo.
+function afterMemorySaved(year) {
+  const opened = reveal.afterSave(year);
+  if (opened) reveal.sendRevealEmail(opened).catch(err => console.error('Correo de revelación falló:', err.message));
+}
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -300,6 +312,7 @@ app.post('/nuevo', auth.requireLogin, photoUpload, (req, res) => {
       req.file ? req.file.filename : '');
   deleteDraft(req.user.id, `nuevo-${year}`);
   warmPreview(req.user.id, year);
+  afterMemorySaved(year);
   res.redirect('/?ok=1');
 });
 
@@ -336,16 +349,25 @@ app.post('/editar/:id', auth.requireLogin, photoUpload, (req, res) => {
       mem.id);
   deleteDraft(req.user.id, `mem-${mem.id}`);
   warmPreview(req.user.id, mem.year);
+  afterMemorySaved(mem.year);
   res.redirect('/?ok=1');
 });
 
 // ---------- Fragmento de 30 s de la canción de un recuerdo ----------
 app.get('/fragmento/:id', auth.requireLogin, async (req, res) => {
-  const mem = db.prepare('SELECT id, song, song_url, preview, is_placeholder FROM memories WHERE id = ?').get(Number(req.params.id));
-  if (!mem || mem.is_placeholder || (!mem.song && !mem.song_url)) return res.status(404).json({ none: true });
+  const mem = db.prepare('SELECT id, user_id, year, song, song_url, preview, is_placeholder FROM memories WHERE id = ?').get(Number(req.params.id));
+  if (!mem || mem.is_placeholder || !reveal.canSee(mem, req.user) || (!mem.song && !mem.song_url)) return res.status(404).json({ none: true });
   const p = await require('./lib/preview').previewFor(mem);
   if (!p || p.none) return res.status(404).json({ none: true });
   res.json({ url: p.url, track: p.track, artist: p.artist, link: p.link });
+});
+
+// ---------- Revelación: ya vio la animación de apertura de ese año ----------
+app.post('/revelado', auth.requireLogin, jsonBody, (req, res) => {
+  const year = Number(req.body && req.body.year);
+  if (!Number.isInteger(year) || !reveal.revealInfo(year)) return res.status(400).json({ ok: false });
+  reveal.markSeen(req.user.id, year);
+  res.json({ ok: true });
 });
 
 // ---------- Ajustes: nombre y avatar (recortado a 256×256 con sharp) ----------

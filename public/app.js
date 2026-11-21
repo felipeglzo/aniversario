@@ -21,14 +21,16 @@
   setInterval(tick, 1000);
 })();
 
-// Cifras del hero: cada dígito gira como un rodillo hasta su número (una vez por visita).
+// Cifras del hero: cada dígito gira como un rodillo hasta su número. Va con la entrada
+// completa (la primera vez de la sesión): cada cifra empieza a rodar cuando su recuadro casi llegó.
 (function () {
   const nums = [...document.querySelectorAll('.stats b')];
   if (!nums.length) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  try { if (sessionStorage.getItem('rodillos')) return; sessionStorage.setItem('rodillos', '1'); } catch (_) { /* sin almacenamiento: anima siempre */ }
-  nums.forEach((el, ci) => {
+  if (!document.documentElement.classList.contains('enter-full')) return;
+  nums.forEach((el) => {
     const value = el.textContent.trim();
+    const tile = el.parentElement;
+    const tileIn = parseFloat(getComputedStyle(tile).getPropertyValue('--in-t')) || 0;
     el.setAttribute('aria-label', value);
     el.textContent = '';
     let di = 0;
@@ -40,13 +42,97 @@
       for (let l = 0; l < loops; l++) for (let d = 0; d < 10; d++) strip.appendChild(Object.assign(document.createElement('span'), { textContent: d }));
       for (let d = 0; d <= target; d++) strip.appendChild(Object.assign(document.createElement('span'), { textContent: d }));
       col.appendChild(strip); el.appendChild(col);
-      const steps = loops * 10 + target, delay = 250 + ci * 120 + di * 90, dur = 1.3 + di * 0.18;
+      const steps = loops * 10 + target, delay = tileIn + 280 + di * 60, dur = 1.3 + di * 0.18;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         strip.style.transition = `transform ${dur}s cubic-bezier(.16,1,.3,1) ${delay}ms`;
         strip.style.transform = `translateY(-${steps * 1.15}em)`;
       }));
       di++;
     }
+  });
+})();
+
+// Luz del pill del contador: el radio de las esquinas sigue la altura real del pill.
+(function () {
+  const svg = document.querySelector('.pill-light');
+  if (!svg) return;
+  const fit = () => {
+    const r = (svg.getBoundingClientRect().height / 2).toFixed(2);
+    if (r > 0) svg.querySelectorAll('rect').forEach(el => { el.setAttribute('rx', r); el.setAttribute('ry', r); });
+  };
+  fit();
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+
+// Revelación: la primera vez que entras después de que un año se abrió aparece
+// «Abrir el cofre». Al tocarlo, las tarjetas giran y las polaroids caen en su lugar.
+(function () {
+  const overlay = document.getElementById('reveal');
+  const section = document.getElementById('revelacion');
+  if (!overlay || !section) return;
+  const year = Number(overlay.dataset.year);
+  const html = document.documentElement;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Aparece cuando termina la entrada del inicio, para que no compitan.
+  const wait = html.classList.contains('enter-full') ? 1500 : html.classList.contains('enter-quick') ? 350 : 0;
+  const btn = document.getElementById('reveal-open');
+
+  setTimeout(() => {
+    overlay.hidden = false;
+    document.body.classList.add('reveal-lock');
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));
+    btn.focus({ preventScroll: true, focusVisible: false });
+  }, wait);
+
+  overlay.addEventListener('keydown', (e) => { if (e.key === 'Tab') { e.preventDefault(); btn.focus(); } });
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, still ? 0 : ms));
+
+  function flip(card) {
+    return new Promise(resolve => {
+      const done = () => {
+        const pol = card.querySelector('.polaroid');
+        if (pol && !still) pol.style.opacity = '0'; // espera a caer cuando la tarjeta ya giró
+        card.classList.remove('flip-out', 'mem-covered');
+        const cover = card.querySelector('.reveal-cover'); if (cover) cover.remove();
+        if (still) return resolve();
+        card.classList.add('flip-in');
+        card.getBoundingClientRect(); // aplica el giro de salida antes de regresar
+        card.classList.add('go');
+        setTimeout(() => {
+          card.classList.remove('flip-in', 'go');
+          if (pol) { pol.style.opacity = ''; pol.classList.add('drop'); pol.addEventListener('animationend', () => pol.classList.remove('drop'), { once: true }); }
+          resolve();
+        }, 640);
+      };
+      if (still) return done();
+      card.classList.add('flip-out');
+      setTimeout(done, 390);
+    });
+  }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      fetch('/revelado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ year }), keepalive: true, credentials: 'same-origin' });
+    } catch (_) { /* si falla, la animación vuelve a salir la próxima vez */ }
+    overlay.classList.add('leaving');
+    document.body.classList.remove('reveal-lock');
+    const bar = document.querySelector('.topbar');
+    const flash = document.getElementById('flash');
+    const top = section.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - (flash ? flash.offsetHeight : 0) - 16;
+    window.scrollTo({ top, behavior: still ? 'auto' : 'smooth' });
+    await sleep(700);
+    overlay.remove();
+    const cards = [...section.querySelectorAll('.mem-covered')];
+    for (let i = 0; i < cards.length; i++) {
+      const p = flip(cards[i]);
+      if (i < cards.length - 1) await sleep(300); else await p;
+    }
+    await sleep(500);
+    const pill = section.querySelector('[data-reveal-pill]');
+    if (pill) pill.hidden = false;
   });
 })();
 

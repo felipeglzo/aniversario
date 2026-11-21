@@ -13,11 +13,21 @@ anuales, más el correo automático de cada 24 de noviembre.
   (el correo trae el botón). Cada recuerdo admite **una corrección**, sin límite de
   tiempo. Los precargados de 2023–2025 se llenan editándolos (llenarlos no gasta la
   corrección).
+- **Revelación** (lib/reveal.js): el recuerdo de cada quien es secreto hasta que los dos
+  guardaron el suyo de ese año; desde 2026, si uno no escribió, se abre el 1 de enero.
+  Es secreto real: el texto, la foto y la canción del otro no salen del servidor antes
+  (/fotos y /fragmento también lo revisan). La primera vez que cada quien entra después
+  ve «Abrir el cofre» (tarjetas que giran, polaroids que caen) y a los dos les llega el
+  correo «Sus recuerdos de AAAA ya se pueden ver». 2023 quedó abierto; 2024–2025 siguen la
+  misma regla (sin fecha límite).
+- **Inicio**: entrada en cascada la primera vez de la sesión (fundido rápido después; nada
+  con «reducir movimiento»); luz coral que recorre el pill del contador cada 10 s.
 - **Correo del 24 nov, 8:00 am (Vancouver)**: asunto `¡Feliz Nº Aniversario! 🥂`,
   preview text que rota entre 10 frases (lib/emailTemplate.js), estadísticas dinámicas
   y un recuerdo de cada quien, de un año pasado al azar (nunca el inmediato anterior),
   **sin repetir** hasta agotar el pool.
-- **Recordatorio del 1 dic**: solo a quien todavía no escribe su recuerdo del año.
+- **Recordatorio del 1 dic**: solo a quien todavía no escribe su recuerdo del año (si el otro
+  ya guardó el suyo, se lo dice: «Felipe ya guardó el suyo. Falta el tuyo para abrirlos»).
 - **Correo de prueba cada 10 nov**, solo a Felipe: confirma que el sistema vive.
 - **Respaldos**: copia local semanal de la base (rota 12) y copia trimestral (primer lunes de ene/abr/jul/oct) + la del
   24 nov enviada por correo. Las **fotos** solo se respaldan en el servidor:

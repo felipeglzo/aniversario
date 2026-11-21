@@ -644,3 +644,146 @@ button.song-chip { border: none; font: inherit; font-size: 13px; font-weight: 50
 .player-foot a:hover { color: var(--ink); text-decoration: underline; }
 .player-none { margin: 0; font-size: 13px; color: var(--muted); }
 .player.none .player-row, .player.none .player-credit { display: none; }
+
+/* ---------- Entrada del inicio (en cascada) ----------
+   La clase la pone un script en el <head> antes de pintar: enter-full la primera vez
+   de la sesión, enter-quick después. Sin script o con «reducir movimiento»: nada. */
+@keyframes in-up { from { opacity: 0; transform: translateY(var(--in-d, 22px)); } to { opacity: 1; transform: none; } }
+@keyframes in-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes in-bar { from { width: 0; } }
+.enter-full .home .topbar { animation: in-fade 640ms ease-out both; }
+.enter-full .home :is(.hero-card, .hero-seven, .hero-years, .hero-since, .hero-counter, .hero-side-title, .stats > div, .milestone),
+.enter-full .home > .sheet,
+.enter-full .home .cofre-head > *,
+.enter-full .home .cofre > .year:first-of-type :is(.year-head, .year-grid > .mem),
+.enter-full .home .cofre > .year:not(:first-of-type),
+.enter-full .home .signature {
+  animation: in-up 800ms cubic-bezier(.16,1,.3,1) var(--in-t, 0ms) both;
+}
+.home .hero-card { --in-t: 80ms; }
+.home .hero-seven { --in-t: 200ms; }
+.home .hero-years { --in-t: 270ms; }
+.home .hero-since { --in-t: 330ms; }
+.home .hero-counter { --in-t: 390ms; }
+.home .hero-side-title { --in-t: 300ms; }
+.home .stats > div:nth-child(1) { --in-t: 360ms; }
+.home .stats > div:nth-child(2) { --in-t: 420ms; }
+.home .stats > div:nth-child(3) { --in-t: 480ms; }
+.home .stats > div:nth-child(4) { --in-t: 540ms; }
+.home .milestone { --in-t: 600ms; }
+.home > .sheet { --in-t: 520ms; --in-d: 72px; }
+.home .cofre-head > :nth-child(1) { --in-t: 640ms; }
+.home .cofre-head > :nth-child(2) { --in-t: 700ms; }
+.home .cofre-head > :nth-child(3) { --in-t: 760ms; }
+.home .cofre-head > :nth-child(4) { --in-t: 800ms; }
+.home .cofre > .year:first-of-type .year-head { --in-t: 820ms; }
+.home .cofre > .year:first-of-type .year-grid > .mem:nth-child(1) { --in-t: 880ms; }
+.home .cofre > .year:first-of-type .year-grid > .mem:nth-child(2) { --in-t: 940ms; }
+.home .cofre > .year:not(:first-of-type) { --in-t: 1000ms; }
+.home .signature { --in-t: 1060ms; }
+/* La barra hacia los 10 años se llena cuando su bloque ya llegó. */
+.enter-full .home .milestone-bar div { animation: in-bar 1500ms cubic-bezier(.2,.8,.2,1) calc(var(--in-t) + 320ms) both; }
+@media (max-width: 759px) {
+  /* En el celular la tarjeta va en una sola columna: las cifras llegan después del contador. */
+  .home .hero-side-title { --in-t: 440ms; }
+  .home .stats > div:nth-child(1) { --in-t: 500ms; }
+  .home .stats > div:nth-child(2) { --in-t: 550ms; }
+  .home .stats > div:nth-child(3) { --in-t: 600ms; }
+  .home .stats > div:nth-child(4) { --in-t: 650ms; }
+  .home .milestone { --in-t: 720ms; }
+  .home > .sheet { --in-t: 600ms; }
+}
+/* Las siguientes veces de la sesión: solo un fundido rápido. */
+.enter-quick .home :is(.night-inner, .cofre) { animation: in-fade 320ms ease-out both; }
+
+/* ---------- Luz coral en el borde del pill del contador ---------- */
+.hero-counter { position: relative; }
+.pill-light {
+  position: absolute; inset: -0.5px; width: calc(100% + 1px); height: calc(100% + 1px);
+  overflow: visible; pointer-events: none; filter: drop-shadow(0 0 3px rgba(255,154,166,0.9));
+  animation: in-fade 900ms ease-out var(--light-in, 0ms) both;
+}
+.enter-full .pill-light { --light-in: 1100ms; }
+.enter-quick .pill-light { --light-in: 300ms; }
+.pill-light rect { fill: none; stroke: #FF9AA6; stroke-width: 1.5; stroke-linecap: butt; animation: pill-lap 10s linear infinite; }
+@keyframes pill-lap { to { stroke-dashoffset: -100; } }
+@media (prefers-reduced-motion: reduce) { .pill-light { display: none; } }
+
+/* ---------- Revelación ---------- */
+.pill-verde { background: #E3F6EC; color: #1D6B45; }
+.badge-secret { display: inline-flex; align-items: center; gap: 6px; }
+.lock-badge {
+  width: 64px; height: 64px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #FF8A95, #C2389B);
+  box-shadow: 0 10px 24px rgba(255,138,149,0.35), inset 0 0 0 3px rgba(255,255,255,0.35);
+}
+.tone-lila .lock-badge { background: linear-gradient(135deg, #B983FF, #7B4DFF); box-shadow: 0 10px 24px rgba(185,131,255,0.35), inset 0 0 0 3px rgba(255,255,255,0.35); }
+.sealed-title { margin: 0; font-family: var(--serif); font-size: 30px; line-height: 1.15; color: var(--ink); }
+.sealed-text { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 320px; }
+.sealed-note { margin: 0; font-size: 12px; color: var(--muted); }
+
+/* El recuerdo del otro, sellado: un dibujo borroso genérico (nunca su contenido). */
+.mem-sealed { min-height: 420px; overflow: hidden; }
+.sealed-ghost { display: flex; flex-direction: column; gap: 12px; filter: blur(6px); opacity: .9; padding-top: 8px; }
+.sealed-ghost div { align-self: center; width: 70%; height: 170px; border-radius: 4px; opacity: .35; transform: rotate(-2deg); background: linear-gradient(135deg, #FFB37A, #FF6B7A 50%, #B983FF); }
+.tone-lila .sealed-ghost div { background: linear-gradient(135deg, #D9C7FF, #B983FF 50%, #7B4DFF); }
+.sealed-ghost span { display: block; height: 14px; border-radius: 7px; background: rgba(30,27,51,0.10); }
+.sealed-ghost span:nth-child(2) { width: 92%; } .sealed-ghost span:nth-child(3) { width: 78%; }
+.sealed-ghost span:nth-child(4) { width: 86%; } .sealed-ghost span:nth-child(5) { width: 54%; }
+.sealed-cover, .reveal-cover {
+  position: absolute; left: 0; right: 0; top: 96px; bottom: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 0 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(251,247,244,0.72) 30%, rgba(251,247,244,0.86) 100%);
+}
+/* Tapa de la animación: solo con JavaScript (sin él, el recuerdo ya se ve normal). */
+.reveal-cover { display: none; background: linear-gradient(180deg, rgba(251,247,244,0) 0, rgba(251,247,244,0.98) 28px); }
+.js .mem-covered .reveal-cover { display: flex; }
+.mem-covered { overflow: hidden; }
+.mem-covered .polaroid { visibility: hidden; }
+.mem.flip-out { transition: transform .38s cubic-bezier(.55,0,.75,.4); transform: perspective(1400px) rotateY(90deg); }
+.mem.flip-in { transform: perspective(1400px) rotateY(-90deg); }
+.mem.flip-in.go { transition: transform .62s cubic-bezier(.22,1,.36,1); transform: perspective(1400px) rotateY(0deg); }
+@keyframes pol-drop {
+  0% { opacity: 0; transform: translateY(-46px) rotate(calc(var(--rot, -2deg) + 7deg)); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: rotate(var(--rot, -2deg)); }
+}
+.polaroid.drop { animation: pol-drop .8s cubic-bezier(.34,1.56,.64,1) both; }
+
+.reveal {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px;
+  overflow: hidden; background: rgba(18,15,42,0.94); opacity: 0; transition: opacity .5s ease;
+}
+.reveal.show { opacity: 1; }
+.reveal.leaving { opacity: 0; pointer-events: none; }
+.reveal .aurora.a1 { left: -160px; top: -160px; }
+.reveal .aurora.a2 { right: -160px; top: 30%; }
+.reveal-box {
+  position: relative; width: 100%; max-width: 520px; box-sizing: border-box; padding: 40px; border-radius: 32px; color: #fff; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+  transform: translateY(16px) scale(.98); transition: transform .7s cubic-bezier(.16,1,.3,1);
+}
+.reveal.show .reveal-box { transform: none; }
+.reveal-pair { display: flex; align-items: center; gap: 14px; }
+.reveal-pair img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+.reveal-pair img.tone-coral { box-shadow: 0 0 0 3px #120F2A, 0 0 0 5px #FF8A95; }
+.reveal-pair img.tone-lila { box-shadow: 0 0 0 3px #120F2A, 0 0 0 5px #B983FF; }
+.reveal-pair span { font-family: var(--serif); font-style: italic; font-size: 36px; color: #FF9AA6; }
+.reveal-eyebrow { margin: 0; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,0.72); }
+.reveal-box h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 42px; line-height: 1.1; }
+.reveal-lead { margin: 0; font-size: 15px; line-height: 1.55; color: rgba(255,255,255,0.82); }
+.reveal-box .btn-grad { margin-top: 8px; padding: 15px 28px; font-size: 16px; }
+body.reveal-lock { overflow: hidden; }
+@media (max-width: 759px) {
+  .mem-sealed { min-height: 360px; }
+  .sealed-title { font-size: 26px; }
+  .reveal-box { padding: 30px 22px; border-radius: 28px; }
+  .reveal-box h2 { font-size: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-box, .mem.flip-out, .mem.flip-in.go { transition: none; }
+  .polaroid.drop { animation: none; }
+}
+.mem.flip-out, .mem.flip-in { animation: none !important; }
