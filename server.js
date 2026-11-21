@@ -10,6 +10,7 @@ const views = require('./lib/views');
 const { allMemoriesByYear } = require('./lib/memories');
 const { creationWindowOpen, todayParts } = require('./lib/dates');
 const reveal = require('./lib/reveal');
+const stickers = require('./lib/stickers');
 
 const MAX_BODY = 1000; // caracteres por recuerdo
 
@@ -367,6 +368,20 @@ app.post('/revelado', auth.requireLogin, jsonBody, (req, res) => {
   const year = Number(req.body && req.body.year);
   if (!Number.isInteger(year) || !reveal.revealInfo(year)) return res.status(400).json({ ok: false });
   reveal.markSeen(req.user.id, year);
+  res.json({ ok: true });
+});
+
+// ---------- Stickers en la foto del otro ----------
+app.post('/stickers', auth.requireLogin, jsonBody, (req, res) => {
+  const r = stickers.add(req.user, Number(req.body && req.body.memoryId), req.body && req.body.emoji);
+  if (r.error) return res.status(400).json({ ok: false, error: r.error });
+  res.json({ ok: true, sticker: r.sticker });
+});
+app.post('/stickers/:id/quitar', auth.requireLogin, (req, res) => {
+  res.json({ ok: stickers.remove(req.user, Number(req.params.id)) });
+});
+app.post('/stickers/vistos', auth.requireLogin, jsonBody, (req, res) => {
+  stickers.markSeen(req.user.id, req.body && req.body.ids);
   res.json({ ok: true });
 });
 

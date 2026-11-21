@@ -787,3 +787,82 @@ body.reveal-lock { overflow: hidden; }
   .polaroid.drop { animation: none; }
 }
 .mem.flip-out, .mem.flip-in { animation: none !important; }
+
+/* ---------- Stickers en la foto del otro ---------- */
+.stk {
+  position: absolute; z-index: 3; width: 64px; height: 64px; padding: 0; border: none; background: transparent;
+  font-size: 50px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transform: rotate(var(--sr));
+  /* Borde blanco recortado, como sticker de vinil. */
+  filter: drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff) drop-shadow(0 6px 8px rgba(40,20,60,0.25));
+}
+.stk-s0 { --sr: 14deg; right: -24px; top: -26px; }
+.stk-s1 { --sr: -12deg; left: -28px; bottom: 64px; }
+.stk:focus-visible { outline: 3px solid #C2389B; outline-offset: 2px; border-radius: 12px; }
+@keyframes stk-pegar {
+  0% { opacity: 0; transform: rotate(calc(var(--sr) - 24deg)) scale(1.9); }
+  55% { opacity: 1; transform: rotate(calc(var(--sr) + 4deg)) scale(.92); }
+  100% { opacity: 1; transform: rotate(var(--sr)) scale(1); }
+}
+@keyframes stk-despegar { to { opacity: 0; transform: rotate(calc(var(--sr) + 30deg)) scale(.4) translateY(-20px); } }
+.stk.pegar { animation: stk-pegar .5s cubic-bezier(.34,1.56,.64,1) both; }
+.stk.despegar { animation: stk-despegar .3s ease-in both; pointer-events: none; }
+.js .stk.stk-new { opacity: 0; }
+.stk-tip {
+  position: absolute; z-index: 5; margin: 0; padding: 7px 12px; border-radius: 999px; background: #1E1B33; color: #fff;
+  font-family: var(--serif); font-style: italic; font-size: 16px; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px rgba(30,27,51,0.25); animation: in-fade .25s ease-out both;
+}
+.stk-tip.t0 { right: -30px; top: 44px; }
+.stk-tip.t1 { left: -34px; bottom: 24px; }
+.stk-add {
+  position: absolute; right: -14px; bottom: 30px; z-index: 4; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(30,27,51,0.08); background: #fff; color: #8A1F3B; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 8px 20px rgba(60,30,90,0.18);
+}
+.tone-lila .stk-add { color: #4A2A8C; }
+.stk-add[aria-expanded="true"] { background: #FFF0F2; }
+.stk-tray {
+  align-self: center; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 22px;
+  background: #fff; border: 1px solid rgba(30,27,51,0.08); box-shadow: 0 12px 30px rgba(60,30,90,0.12); animation: in-fade .2s ease-out both;
+}
+.stk-tray[hidden] { display: none; }
+.stk-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.stk-choices button { width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; font-size: 26px; line-height: 1; cursor: pointer; }
+.stk-choices button:hover { background: #F7F3FA; }
+.stk-more { width: 44px; height: 44px; box-sizing: border-box; border: none; border-radius: 12px; background: #F4F0F8; color: #5E5A73; font: inherit; font-size: 22px; text-align: center; padding: 0; }
+.stk-more::placeholder { color: #5E5A73; font-weight: 600; }
+.stk-more:focus { outline: 2px solid #C2389B; }
+.stk-hint { margin: 0; font-size: 12px; color: var(--muted); }
+.stk-hint.err { color: #B3134A; }
+
+/* Aviso en el inicio: «Fernanda te dejó un sticker en 2024 →» */
+.stk-notice-row { display: flex; justify-content: center; margin: -54px 0 14px; }
+.stk-notice {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 6px 16px 6px 6px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  color: #fff; font-size: 14px; text-decoration: none; box-shadow: 0 10px 30px rgba(10,8,25,0.25);
+  animation: stk-llega .6s cubic-bezier(.16,1,.3,1) .5s both;
+}
+.enter-full .stk-notice { animation-delay: 1.2s; }
+.stk-notice:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.stk-notice b { font-weight: 600; }
+.stk-notice-face { position: relative; flex: none; width: 32px; height: 32px; margin-right: 4px; }
+.stk-notice-face img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #FF8A95; }
+.stk-notice-face.tone-lila img { box-shadow: 0 0 0 2px #B983FF; }
+.stk-notice-face span { position: absolute; right: -8px; bottom: -6px; font-size: 18px; transform: rotate(12deg); filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff); }
+@keyframes stk-llega { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 759px) {
+  .stk { width: 56px; height: 56px; font-size: 42px; }
+  .stk-s0 { right: -14px; top: -20px; }
+  .stk-s1 { left: -16px; bottom: 54px; }
+  .stk-tip.t0 { right: -10px; top: 38px; }
+  .stk-tip.t1 { left: -12px; bottom: 18px; }
+  .stk-add { right: -8px; }
+  .stk-notice-row { margin: 0 0 14px; }
+  .stk-notice { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stk.pegar, .stk.despegar, .stk-notice { animation: none; }
+}

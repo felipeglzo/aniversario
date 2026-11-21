@@ -20,6 +20,11 @@ anuales, más el correo automático de cada 24 de noviembre.
   ve «Abrir el cofre» (tarjetas que giran, polaroids que caen) y a los dos les llega el
   correo «Sus recuerdos de AAAA ya se pueden ver». 2023 quedó abierto; 2024–2025 siguen la
   misma regla (sin fecha límite).
+- **Stickers** (lib/stickers.js): en la foto del otro (ya revelada) cada quien pega hasta
+  2 emojis, con borde blanco recortado; los despega tocándolos. En la propia foto, tocar uno
+  dice «Por Fernanda · 26 nov». Los nuevos se avisan en el inicio («Fernanda te dejó un
+  sticker en 2024 →») y se pegan frente a ti al verlos. Salen también en la polaroid del
+  correo (necesita `fonts-noto-color-emoji` en el servidor).
 - **Inicio**: entrada en cascada la primera vez de la sesión (fundido rápido después; nada
   con «reducir movimiento»); luz coral que recorre el pill del contador cada 10 s.
 - **Correo del 24 nov, 8:00 am (Vancouver)**: asunto `¡Feliz Nº Aniversario! 🥂`,

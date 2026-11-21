@@ -136,6 +136,159 @@
   });
 })();
 
+// Stickers: en la foto del otro pegas hasta 2 emojis (y despegas los tuyos tocándolos);
+// en tu foto, tocar uno muestra quién lo pegó y cuándo. Los que no has visto se pegan
+// frente a ti la primera vez que su foto aparece en pantalla.
+(function () {
+  if (!document.querySelector('.polaroid')) return;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body || {}) })
+    .then(r => r.json().catch(() => ({ ok: false })));
+
+  function closeTrays(except) {
+    document.querySelectorAll('[data-stk-tray]').forEach(t => {
+      if (t === except) return;
+      t.hidden = true;
+      const b = document.querySelector(`[data-stk-add="${t.dataset.stkTray}"]`); if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  }
+  function refresh(memId) {
+    const pol = document.querySelector(`#recuerdo-${memId} .polaroid`);
+    const n = pol ? pol.querySelectorAll('.stk:not(.despegar)').length : 0;
+    const add = document.querySelector(`[data-stk-add="${memId}"]`);
+    const tray = document.querySelector(`[data-stk-tray="${memId}"]`);
+    if (add) add.hidden = n >= 2;
+    if (tray) {
+      if (n >= 2) { tray.hidden = true; if (add) add.setAttribute('aria-expanded', 'false'); }
+      const hint = tray.querySelector('[data-stk-hint]');
+      hint.classList.remove('err');
+      hint.textContent = (2 - n === 1 ? 'Te queda 1' : 'Te quedan 2') + ' · Toca uno tuyo para quitarlo';
+    }
+  }
+  function slam(el) {
+    el.classList.remove('stk-new');
+    if (still) return;
+    el.classList.add('pegar');
+    el.addEventListener('animationend', () => el.classList.remove('pegar'), { once: true });
+  }
+
+  async function stick(memId, emoji) {
+    const tray = document.querySelector(`[data-stk-tray="${memId}"]`);
+    const r = await post('/stickers', { memoryId: Number(memId), emoji });
+    if (!r.ok) {
+      if (tray) { const h = tray.querySelector('[data-stk-hint]'); h.textContent = r.error || 'No se pudo pegar. Intenta de nuevo.'; h.classList.add('err'); }
+      return;
+    }
+    const pol = document.querySelector(`#recuerdo-${memId} .polaroid`);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `stk stk-s${r.sticker.slot} stk-mine`;
+    b.dataset.stkId = r.sticker.id;
+    b.setAttribute('aria-label', `Tu sticker ${r.sticker.emoji}. Tócalo para despegarlo`);
+    b.textContent = r.sticker.emoji;
+    pol.insertBefore(b, pol.querySelector('.stk-add'));
+    slam(b);
+    refresh(memId);
+  }
+
+  function showTip(el) {
+    const pol = el.closest('.polaroid');
+    pol.querySelectorAll('.stk-tip').forEach(t => t.remove());
+    if (el.dataset.tipOpen) { delete el.dataset.tipOpen; return; }
+    pol.querySelectorAll('[data-tip-open]').forEach(x => delete x.dataset.tipOpen);
+    const tip = document.createElement('p');
+    tip.className = 'stk-tip ' + (el.classList.contains('stk-s0') ? 't0' : 't1');
+    tip.setAttribute('role', 'status');
+    tip.textContent = el.dataset.tip;
+    pol.appendChild(tip);
+    el.dataset.tipOpen = '1';
+    clearTimeout(showTip.t);
+    showTip.t = setTimeout(() => { tip.remove(); delete el.dataset.tipOpen; }, 2600);
+  }
+
+  document.addEventListener('click', (e) => {
+    const add = e.target.closest('[data-stk-add]');
+    if (add) {
+      e.stopPropagation();
+      const tray = document.querySelector(`[data-stk-tray="${add.dataset.stkAdd}"]`);
+      closeTrays(tray);
+      tray.hidden = !tray.hidden;
+      add.setAttribute('aria-expanded', String(!tray.hidden));
+      return;
+    }
+    const choice = e.target.closest('[data-stk-tray] [data-emoji]');
+    if (choice) { stick(choice.closest('[data-stk-tray]').dataset.stkTray, choice.dataset.emoji); return; }
+    const st = e.target.closest('.stk');
+    if (st) {
+      e.stopPropagation();
+      if (st.classList.contains('stk-mine')) {
+        const memId = st.closest('.mem').id.replace('recuerdo-', '');
+        st.classList.add('despegar');
+        post(`/stickers/${st.dataset.stkId}/quitar`).then(r => {
+          if (r.ok) { setTimeout(() => { st.remove(); refresh(memId); }, still ? 0 : 300); }
+          else st.classList.remove('despegar');
+        });
+      } else if (st.dataset.tip) showTip(st);
+      return;
+    }
+    if (!e.target.closest('[data-stk-tray]')) closeTrays();
+  });
+
+  // «+»: cualquier emoji del teclado del teléfono (o del selector de la compu).
+  document.addEventListener('input', (e) => {
+    const inp = e.target.closest('[data-stk-input]');
+    if (!inp) return;
+    const v = inp.value.trim();
+    if (!v) return;
+    const first = typeof Intl !== 'undefined' && Intl.Segmenter
+      ? [...new Intl.Segmenter('es', { granularity: 'grapheme' }).segment(v)].pop().segment : v;
+    if (!/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(first)) { inp.value = ''; return; }
+    inp.value = '';
+    inp.blur();
+    stick(inp.closest('[data-stk-tray]').dataset.stkTray, first);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTrays(); });
+
+  // Los nuevos en mis fotos: se pegan cuando la foto ya está a la vista, y quedan como vistos.
+  const fresh = [...document.querySelectorAll('.stk.stk-new')];
+  if (fresh.length) {
+    const seen = [];
+    let flush = null;
+    const mark = (el) => {
+      seen.push(Number(el.dataset.stkId));
+      clearTimeout(flush);
+      flush = setTimeout(() => { post('/stickers/vistos', { ids: seen.splice(0) }); }, 700);
+    };
+    const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const pol = en.target;
+        if (pol.closest('.mem-covered')) return; // la revelación va primero
+        io.unobserve(pol);
+        pol.querySelectorAll('.stk.stk-new').forEach((el, i) => setTimeout(() => { slam(el); mark(el); }, 250 + i * 350));
+      });
+    }, { threshold: 0.6 }) : null;
+    const pols = new Set(fresh.map(el => el.closest('.polaroid')));
+    pols.forEach(p => io ? io.observe(p) : p.querySelectorAll('.stk.stk-new').forEach(el => { slam(el); mark(el); }));
+    // Tras la revelación, la tapa se quita: vuelve a intentar.
+    document.addEventListener('animationend', (e) => {
+      if (io && e.target.classList && e.target.classList.contains('polaroid') && e.target.querySelector('.stk.stk-new')) { io.unobserve(e.target); io.observe(e.target); }
+    });
+  }
+
+  // El aviso del inicio lleva suave hasta la foto.
+  const notice = document.querySelector('.stk-notice');
+  if (notice) notice.addEventListener('click', (e) => {
+    const target = document.querySelector(notice.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    const bar = document.querySelector('.topbar');
+    const top = target.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 24;
+    window.scrollTo({ top, behavior: still ? 'auto' : 'smooth' });
+    notice.closest('.stk-notice-row').style.visibility = 'hidden';
+  });
+})();
+
 // Inicio: la barra empieza transparente y se funde a vidrio oscuro cuando el cofre se acerca.
 (function () {
   if (!document.body.classList.contains('home')) return;
