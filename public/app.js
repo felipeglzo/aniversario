@@ -1,3 +1,12 @@
+// Números del cofre: una marca por día (ver /numeros). Nunca bloquea nada.
+function note(kind, ref) {
+  try {
+    const body = JSON.stringify({ kind, ref: String(ref) });
+    if (!(navigator.sendBeacon && navigator.sendBeacon('/evento', new Blob([body], { type: 'application/json' }))))
+      fetch('/evento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true, credentials: 'same-origin' });
+  } catch (_) { /* nada */ }
+}
+
 // Contador en vivo del hero: "7 años, 361 días, 14:05:09 y contando".
 (function () {
   const el = document.getElementById('live-counter');
@@ -402,6 +411,7 @@
     try { await audio.play(); } catch (_) { stop(player); return; }
     player.classList.remove('loading'); player.classList.add('playing');
     player.querySelector('.player-btn').setAttribute('aria-label', 'Pausar el fragmento');
+    note('cancion', player.id.replace('player-', ''));
   }
 
   audio.addEventListener('timeupdate', () => { if (current && current.dataset.src && audio.src === current.dataset.src) paint(current, audio.currentTime); });
@@ -521,6 +531,7 @@
     box.hidden = false;
     document.documentElement.classList.add('lb-open');
     const pol = el.closest('.polaroid'); if (pol) pol.classList.add('straight');
+    const mem = pol && el.closest('.mem'); if (mem && mem.id) note('foto', mem.id.replace('recuerdo-', ''));
     requestAnimationFrame(() => box.classList.add('show'));
     closeBtn.focus({ preventScroll: true });
   }

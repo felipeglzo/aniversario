@@ -11,6 +11,7 @@ const { allMemoriesByYear } = require('./lib/memories');
 const { creationWindowOpen, todayParts } = require('./lib/dates');
 const reveal = require('./lib/reveal');
 const stickers = require('./lib/stickers');
+const events = require('./lib/events');
 
 const MAX_BODY = 1000; // caracteres por recuerdo
 
@@ -264,8 +265,15 @@ app.post('/nueva-contrasena', (req, res) => {
 });
 
 // ---------- Inicio ----------
+// Números: si llegó desde el botón de un correo (?desde=aniversario…), se anota una vez al día.
+app.use((req, res, next) => {
+  if (req.user && req.method === 'GET' && req.query.desde) events.record(req.user.id, 'correo', req.query.desde);
+  next();
+});
+
 app.get('/', auth.requireLogin, (req, res) => {
   const t = todayParts();
+  events.record(req.user.id, 'visita', events.isMobile(req.get('user-agent')) ? 'movil' : 'compu');
   const drafts = new Set(db.prepare('SELECT target FROM drafts WHERE user_id = ?').all(req.user.id).map(d => d.target));
   const flashes = {
     ok: { type: 'info', text: 'Guardado en el cofre. Tu yo del futuro te lo agradece.' },
@@ -369,6 +377,16 @@ app.post('/revelado', auth.requireLogin, jsonBody, (req, res) => {
   if (!Number.isInteger(year) || !reveal.revealInfo(year)) return res.status(400).json({ ok: false });
   reveal.markSeen(req.user.id, year);
   res.json({ ok: true });
+});
+
+// ---------- Números del cofre ----------
+app.post('/evento', auth.requireLogin, jsonBody, (req, res) => {
+  const b = req.body || {};
+  if (b.kind === 'foto' || b.kind === 'cancion') events.record(req.user.id, b.kind, b.ref);
+  res.status(204).end();
+});
+app.get('/numeros', auth.requireLogin, (req, res) => {
+  res.send(views.numbersPage({ user: req.user, data: require('./lib/numbers').collect() }));
 });
 
 // ---------- Stickers en la foto del otro ----------

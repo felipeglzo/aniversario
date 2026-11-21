@@ -25,6 +25,10 @@ anuales, más el correo automático de cada 24 de noviembre.
   dice «Por Fernanda · 26 nov». Los nuevos se avisan en el inicio («Fernanda te dejó un
   sticker en 2024 →») y se pegan frente a ti al verlos. Salen también en la polaroid del
   correo (necesita `fonts-noto-color-emoji` en el servidor).
+- **Números** (/numeros, lib/events.js y lib/numbers.js): «Nuestro cofre en números», visible
+  para los dos. Una marca por día y por cosa: visita (celular/compu), llegada desde el botón
+  de un correo (?desde=…), foto abierta, canción escuchada; más lo que ya se sabía (cuándo
+  escribió cada quien, stickers, cuánto tardó en abrir la revelación). Sin horas ni contenido.
 - **Inicio**: entrada en cascada la primera vez de la sesión (fundido rápido después; nada
   con «reducir movimiento»); luz coral que recorre el pill del contador cada 10 s.
 - **Correo del 24 nov, 8:00 am (Vancouver)**: asunto `¡Feliz Nº Aniversario! 🥂`,
