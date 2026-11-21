@@ -594,3 +594,17 @@ html.lb-open, html.lb-open body { overflow: hidden; }
 .odo-col { display: inline-block; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: top; }
 .odo-strip { display: flex; flex-direction: column; will-change: transform; }
 .odo-strip span { display: block; height: 1.15em; }
+
+/* ---------- Inicio: barra transparente sobre la noche que se funde al bajar ----------
+   La barra flota encima del hero (margen negativo) y app.js ajusta --p de 0 a 1
+   cuando la hoja crema del cofre se acerca. La línea de abajo se ve siempre. */
+.home .topbar {
+  --p: 0;
+  margin-bottom: calc(-1 * var(--nav-h));
+  background: rgba(18,15,42, calc(0.72 * var(--p)));
+  backdrop-filter: blur(calc(18px * var(--p))); -webkit-backdrop-filter: blur(calc(18px * var(--p)));
+  box-shadow: 0 8px 24px rgba(10,8,25, calc(0.18 * var(--p)));
+}
+.home .night-sticky { top: 0; }
+.home .night-inner { padding-top: calc(var(--nav-h) + 72px); }
+@media (max-width: 759px) { .home .night-inner { padding-top: calc(var(--nav-h) + 28px); } }

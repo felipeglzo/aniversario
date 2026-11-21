@@ -50,6 +50,27 @@
   });
 })();
 
+// Inicio: la barra empieza transparente y se funde a vidrio oscuro cuando el cofre se acerca.
+(function () {
+  if (!document.body.classList.contains('home')) return;
+  const bar = document.querySelector('.topbar');
+  const sheet = document.querySelector('.sheet');
+  if (!bar || !sheet) return;
+  let queued = false;
+  function update() {
+    queued = false;
+    const fade = window.innerWidth < 760 ? 200 : 260;   // distancia en la que se funde
+    const dist = sheet.getBoundingClientRect().top - bar.offsetHeight;
+    const t = Math.max(0, Math.min(1, 1 - dist / fade));
+    const e = t * t * (3 - 2 * t);                        // suave al entrar y al salir
+    bar.style.setProperty('--p', e.toFixed(3));
+  }
+  const ask = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+  window.addEventListener('scroll', ask, { passive: true });
+  window.addEventListener('resize', ask);
+  update();
+})();
+
 // Menú de usuario (avatar → dropdown).
 (function () {
   const btn = document.getElementById('avatar-btn');
