@@ -191,6 +191,43 @@
     refresh(memId);
   }
 
+  // Despegar pide confirmación ahí mismo (en el celular es fácil tocarlo sin querer).
+  function askRemove(st) {
+    const pol = st.closest('.polaroid');
+    const open = pol.querySelector('.stk-confirm');
+    if (open) { const same = open.stk === st; open.remove(); if (same) return; }
+    const c = document.createElement('div');
+    c.className = 'stk-confirm ' + (st.classList.contains('stk-s0') ? 't0' : 't1');
+    c.setAttribute('role', 'dialog');
+    c.setAttribute('aria-label', '¿Quitar sticker?');
+    c.innerHTML = '<span>¿Quitar sticker?</span><button type="button" class="si">Quitar</button><button type="button" class="no">No</button>';
+    c.stk = st;
+    pol.appendChild(c);
+    c.querySelector('.si').focus({ preventScroll: true });
+  }
+  function removeSticker(st) {
+    const memId = st.closest('.mem').id.replace('recuerdo-', '');
+    st.classList.add('despegar');
+    post(`/stickers/${st.dataset.stkId}/quitar`).then(r => {
+      if (r.ok) { setTimeout(() => { st.remove(); refresh(memId); }, still ? 0 : 300); }
+      else st.classList.remove('despegar');
+    });
+  }
+
+  // El botón de pegar da un saltito la primera vez que su foto aparece (una vez por sesión).
+  const adds = [...document.querySelectorAll('[data-stk-add]:not([hidden])')];
+  let greeted = false; try { greeted = !!sessionStorage.getItem('stk-hola'); } catch (_) {}
+  if (adds.length && !greeted && !still && 'IntersectionObserver' in window) {
+    const io2 = new IntersectionObserver((entries) => entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      io2.disconnect();
+      try { sessionStorage.setItem('stk-hola', '1'); } catch (_) {}
+      const b = en.target; b.classList.add('hola');
+      b.addEventListener('animationend', () => b.classList.remove('hola'), { once: true });
+    }), { threshold: 1 });
+    adds.forEach(b => io2.observe(b));
+  }
+
   function showTip(el) {
     const pol = el.closest('.polaroid');
     pol.querySelectorAll('.stk-tip').forEach(t => t.remove());
@@ -221,16 +258,18 @@
     const st = e.target.closest('.stk');
     if (st) {
       e.stopPropagation();
-      if (st.classList.contains('stk-mine')) {
-        const memId = st.closest('.mem').id.replace('recuerdo-', '');
-        st.classList.add('despegar');
-        post(`/stickers/${st.dataset.stkId}/quitar`).then(r => {
-          if (r.ok) { setTimeout(() => { st.remove(); refresh(memId); }, still ? 0 : 300); }
-          else st.classList.remove('despegar');
-        });
-      } else if (st.dataset.tip) showTip(st);
+      if (st.classList.contains('stk-mine')) askRemove(st);
+      else if (st.dataset.tip) showTip(st);
       return;
     }
+    const conf = e.target.closest('.stk-confirm');
+    if (conf) {
+      const st2 = conf.stk;
+      conf.remove();
+      if (e.target.closest('.si') && st2) removeSticker(st2);
+      return;
+    }
+    document.querySelectorAll('.stk-confirm').forEach(c => c.remove());
     if (!e.target.closest('[data-stk-tray]')) closeTrays();
   });
 
@@ -247,7 +286,7 @@
     inp.blur();
     stick(inp.closest('[data-stk-tray]').dataset.stkTray, first);
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTrays(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeTrays(); document.querySelectorAll('.stk-confirm').forEach(c => c.remove()); } });
 
   // Los nuevos en mis fotos: se pegan cuando la foto ya está a la vista, y quedan como vistos.
   const fresh = [...document.querySelectorAll('.stk.stk-new')];
