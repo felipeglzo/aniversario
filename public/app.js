@@ -387,16 +387,18 @@ const Marks = {
   }
 };
 
-// Inicio: la barra empieza transparente y se funde a vidrio oscuro cuando el cofre se acerca.
+// En todas las páginas: la barra empieza transparente (solo su línea de abajo) y se funde a
+// vidrio oscuro cuando la hoja clara se acerca. En páginas con noche corta, el fundido es más corto.
 (function () {
-  if (!document.body.classList.contains('home')) return;
   const bar = document.querySelector('.topbar');
   const sheet = document.querySelector('.sheet');
   if (!bar || !sheet) return;
   let queued = false;
+  const start = () => sheet.getBoundingClientRect().top + window.scrollY - bar.offsetHeight;
   function update() {
     queued = false;
-    const fade = window.innerWidth < 760 ? 200 : 260;   // distancia en la que se funde
+    const base = window.innerWidth < 760 ? 200 : 260;
+    const fade = Math.max(60, Math.min(base, start()));  // distancia en la que se funde
     const dist = sheet.getBoundingClientRect().top - bar.offsetHeight;
     const t = Math.max(0, Math.min(1, 1 - dist / fade));
     const e = t * t * (3 - 2 * t);                        // suave al entrar y al salir

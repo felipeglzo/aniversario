@@ -365,7 +365,7 @@ a.song-chip:hover { filter: brightness(0.97); }
   background: var(--aurora); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .write-page .night { padding-bottom: 76px; }
-.write-page .night-inner { padding-top: 28px; }
+.write-page .night-inner { padding-top: calc(var(--nav-h) + 28px); }
 .write-page .sheet { margin-top: -44px; border-radius: 44px 44px 0 0; overflow: visible; }
 .write-page .glow { display: none; }
 
@@ -485,7 +485,7 @@ a.song-chip:hover { filter: brightness(0.97); }
   .write-head p { font-size: 14px; }
   .write-head .write-year { font-size: 60px; }
   .write-page .night { padding-bottom: 60px; }
-  .write-page .night-inner { padding-top: 20px; }
+  .write-page .night-inner { padding-top: calc(var(--nav-h) + 20px); }
   .write-page .sheet { margin-top: -32px; border-radius: 32px 32px 0 0; }
   .write { padding: 24px 16px 32px; }
   .write-form textarea { font-size: 21px; padding: 16px; border-radius: 18px; }
@@ -508,7 +508,7 @@ a.song-chip:hover { filter: brightness(0.97); }
 .simple-head h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; }
 .simple-head p { margin: 10px 0 0; font-size: 17px; color: rgba(255,255,255,0.8); }
 body:not(.home):not(.write-page) .night { padding-bottom: 96px; }
-body:not(.home):not(.write-page) .night-inner { padding-top: 40px; }
+body:not(.home):not(.write-page) .night-inner { padding-top: calc(var(--nav-h) + 40px); }
 .simple { position: relative; max-width: 560px; margin: 0 auto; padding: 48px 20px 24px; }
 .soft-card { padding: 32px; border-radius: 28px; background: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 16px 40px rgba(60,30,90,0.08); }
 .stack { display: flex; flex-direction: column; gap: 18px; }
@@ -640,7 +640,7 @@ html.lb-open, html.lb-open body { overflow: hidden; }
 /* ---------- Inicio: barra transparente sobre la noche que se funde al bajar ----------
    La barra flota encima del hero (margen negativo) y app.js ajusta --p de 0 a 1
    cuando la hoja crema del cofre se acerca. La línea de abajo se ve siempre. */
-.home .topbar {
+.topbar {
   --p: 0;
   margin-bottom: calc(-1 * var(--nav-h));
   background: rgba(18,15,42, calc(0.72 * var(--p)));
