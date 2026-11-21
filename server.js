@@ -120,6 +120,12 @@ app.post('/borrador/descartar', jsonBody, (req, res) => {
   res.json({ ok: true });
 });
 
+// Busca el fragmento de la canción recién guardada sin hacer esperar a nadie.
+function warmPreview(userId, year) {
+  const mem = db.prepare('SELECT id, song, song_url, preview FROM memories WHERE user_id = ? AND year = ?').get(userId, year);
+  if (mem && (mem.song || mem.song_url)) require('./lib/preview').previewFor(mem).catch(() => {});
+}
+
 // Lee y valida lo que viene del formulario de recuerdo.
 function readMemoryForm(req) {
   const values = {
@@ -293,6 +299,7 @@ app.post('/nuevo', auth.requireLogin, photoUpload, (req, res) => {
     .run(req.user.id, year, used + 1, values.body, values.song, values.song_url,
       req.file ? req.file.filename : '');
   deleteDraft(req.user.id, `nuevo-${year}`);
+  warmPreview(req.user.id, year);
   res.redirect('/?ok=1');
 });
 
@@ -319,7 +326,7 @@ app.post('/editar/:id', auth.requireLogin, photoUpload, (req, res) => {
   const photo = req.file ? req.file.filename : req.body.remove_photo === '1' ? '' : mem.photo;
   const wasPlaceholder = mem.is_placeholder === 1;
   db.prepare(`UPDATE memories SET
-      body = ?, song = ?, song_url = ?, photo = ?,
+      body = ?, song = ?, song_url = ?, photo = ?, preview = '',
       is_placeholder = 0,
       edits_used = edits_used + ?,
       updated_at = datetime('now')
@@ -328,7 +335,17 @@ app.post('/editar/:id', auth.requireLogin, photoUpload, (req, res) => {
       wasPlaceholder ? 0 : 1, // llenar el pendiente no gasta la corrección
       mem.id);
   deleteDraft(req.user.id, `mem-${mem.id}`);
+  warmPreview(req.user.id, mem.year);
   res.redirect('/?ok=1');
+});
+
+// ---------- Fragmento de 30 s de la canción de un recuerdo ----------
+app.get('/fragmento/:id', auth.requireLogin, async (req, res) => {
+  const mem = db.prepare('SELECT id, song, song_url, preview, is_placeholder FROM memories WHERE id = ?').get(Number(req.params.id));
+  if (!mem || mem.is_placeholder || (!mem.song && !mem.song_url)) return res.status(404).json({ none: true });
+  const p = await require('./lib/preview').previewFor(mem);
+  if (!p || p.none) return res.status(404).json({ none: true });
+  res.json({ url: p.url, track: p.track, artist: p.artist, link: p.link });
 });
 
 // ---------- Ajustes: nombre y avatar (recortado a 256×256 con sharp) ----------

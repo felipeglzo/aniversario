@@ -71,6 +71,82 @@
   update();
 })();
 
+// Canción del recuerdo: el chip abre el reproductor y suena un fragmento de 30 s.
+// Un solo <audio> para toda la página: al tocar otra canción se detiene la anterior.
+(function () {
+  const chips = document.querySelectorAll('[data-player]');
+  if (!chips.length) return;
+  const audio = new Audio();
+  audio.preload = 'none';
+  // Audio en silencio para "desbloquear" la reproducción en el iPhone dentro del toque.
+  const SILENCE = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  let current = null;                       // .player que está sonando
+  const fmt = s => '0:' + String(Math.max(0, Math.floor(s))).padStart(2, '0');
+
+  function paint(player, t) {
+    const bars = player.querySelectorAll('.wave span');
+    const frac = Math.min(1, t / 30);
+    bars.forEach((b, i) => b.classList.toggle('on', (i + 0.5) / bars.length <= frac));
+    player.querySelector('.player-time').textContent = fmt(t) + ' / 0:30';
+  }
+  function stop(player, reset) {
+    if (!player) return;
+    player.classList.remove('playing', 'loading');
+    player.querySelector('.player-btn').setAttribute('aria-label', 'Reproducir el fragmento');
+    if (reset) paint(player, 0);
+  }
+  async function source(player) {
+    if (player.dataset.src) return player.dataset.src;
+    const r = await fetch('/fragmento/' + player.dataset.id);
+    if (!r.ok) return null;
+    const p = await r.json();
+    player.dataset.src = p.url;
+    const credit = player.querySelector('.player-credit');
+    if (p.link && !credit.firstChild) {
+      const a = document.createElement('a');
+      a.href = p.link; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = `${p.artist} – ${p.track} · Apple Music`;
+      credit.appendChild(a);
+    }
+    return p.url;
+  }
+  async function play(player) {
+    if (current && current !== player) { audio.pause(); stop(current, true); }
+    current = player;
+    // Dentro del toque: desbloquea el audio (iPhone) antes de esperar a la red.
+    if (!player.dataset.src) { audio.src = SILENCE; audio.play().catch(() => {}); }
+    player.classList.add('loading');
+    let url = null;
+    try { url = await source(player); } catch (_) { url = null; }
+    if (current !== player) return;
+    if (!url) { player.classList.remove('loading'); player.classList.add('none'); player.querySelector('.player-none').hidden = false; current = null; return; }
+    if (audio.src !== url) audio.src = url;
+    try { await audio.play(); } catch (_) { stop(player); return; }
+    player.classList.remove('loading'); player.classList.add('playing');
+    player.querySelector('.player-btn').setAttribute('aria-label', 'Pausar el fragmento');
+  }
+
+  audio.addEventListener('timeupdate', () => { if (current && current.dataset.src && audio.src === current.dataset.src) paint(current, audio.currentTime); });
+  audio.addEventListener('ended', () => { stop(current, true); current = null; });
+
+  chips.forEach(chip => {
+    const player = document.getElementById('player-' + chip.dataset.player);
+    chip.addEventListener('click', () => {
+      const open = chip.getAttribute('aria-expanded') === 'true';
+      chip.setAttribute('aria-expanded', String(!open));
+      player.hidden = open;
+      if (open) { if (current === player) { audio.pause(); stop(player, true); current = null; } }
+      else play(player);                         // abrir = empezar a sonar
+    });
+    player.querySelector('.player-btn').addEventListener('click', () => {
+      if (current === player && player.classList.contains('playing')) { audio.pause(); stop(player); }
+      else if (current === player && audio.src === player.dataset.src && audio.currentTime > 0) {
+        audio.play().then(() => { player.classList.add('playing'); player.querySelector('.player-btn').setAttribute('aria-label', 'Pausar el fragmento'); }).catch(() => {});
+      } else play(player);
+    });
+  });
+})();
+
 // Menú de usuario (avatar → dropdown).
 (function () {
   const btn = document.getElementById('avatar-btn');
