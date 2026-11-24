@@ -410,6 +410,24 @@ const avatarUpload = multer({
   fileFilter: (req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
 
+// Foto compartida con G&G Fund: cuando alguien cambia su foto allá, G&G Fund la manda aquí
+// (solo desde el mismo servidor y con la llave compartida AVATAR_SYNC_KEY de data/config.env).
+app.post('/interno/avatar/:username', require('express').raw({ type: 'image/*', limit: '1mb' }), async (req, res) => {
+  const crypto = require('crypto');
+  const key = String(config.AVATAR_SYNC_KEY || ''); const got = String(req.get('x-sync-key') || '');
+  if (!key || got.length !== key.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(key))) return res.status(403).end();
+  if (!/^(felipe|fernanda)$/.test(req.params.username) || !Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).end();
+  const u = db.prepare('SELECT id, username, avatar FROM users WHERE username = ?').get(req.params.username);
+  if (!u) return res.status(404).end();
+  try {
+    const file = `${u.username}-${Date.now()}.png`;
+    await require('sharp')(req.body).rotate().resize(256, 256, { fit: 'cover' }).png().toFile(path.join(config.AVATARS_DIR, file));
+    if (u.avatar) require('fs').unlink(path.join(config.AVATARS_DIR, u.avatar), () => {});
+    db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(file, u.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(400).json({ ok: false }); }
+});
+
 app.get('/ajustes', auth.requireLogin, (req, res) => {
   res.send(views.settingsPage({ user: req.user }));
 });
